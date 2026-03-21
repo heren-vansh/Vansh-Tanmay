@@ -279,7 +279,33 @@
         #coach-popup { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #00e5ff; border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px rgba(0,229,255,0.3); z-index: 5000; display: none; align-items: center; gap: 15px; box-sizing: border-box; }
         #coach-popup img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #d4af37; }
         #coach-msg { color: #f8fafc; font-size: 13px; text-align: left; flex: 1; line-height: 1.4; }
-        #coach-btn { width: auto; margin: 0; padding: 8px 15px; font-size: 12px; background: #00e5ff; color: #000; box-shadow: none; }  
+        #coach-btn { width: auto; margin: 0; padding: 8px 15px; font-size: 12px; background: #00e5ff; color: #000; box-shadow: none; } 
+        
+        /* ઇન્ટ્રો ઈમેજ અને બ્લર માટે */
+.intro-img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+    z-index: 1004;
+    animation: luxuriousFadeIn 1s forwards;
+}
+
+.blur-transition {
+    filter: blur(15px);
+    transition: filter 1s ease-in-out;
+}
+
+#logo-container img {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 3px solid #d4af37;
+    box-shadow: 0 0 30px #d4af37;
+    animation: popUp 0.8s forwards;
+}
+
                                     </style>
                             </head>
                             <body>
@@ -297,23 +323,29 @@
                                 <audio id="sfx-intro-classic" src="https://assets.mixkit.co/active_storage/sfx/2295/2295-preview.mp3" preload="auto"></audio>
                                 <div id="app">
                 
-                <div id="screen-intro" class="screen active" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    
-                    <div id="start-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background: #0f172a; z-index: 1002;">
-                        <button onclick="startIntroSequence()" style="font-size: 18px; padding: 15px 40px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); animation: popUp 1s infinite alternate;">Tap to Enter Arena</button>
-                    </div> 
+               <div id="screen-intro" class="screen active" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    
+    <img id="intro-bg-1" class="intro-img" src="E:\public\Gemini_Generated_Image_q0xgtaq0xgtaq0xg.png">
 
-                    <div id="dev-intro-text" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1005;">
-                        <h2 style="font-family: 'Cinzel', serif; color: #d4af37; font-size: 24px; letter-spacing: 4px; text-shadow: 0 0 20px rgba(212, 175, 55, 0.8); margin: 0; opacity: 0; animation: luxuriousFadeIn 1.5s forwards;">DEVELOPED BY</h2>
-                        <h1 style="font-family: 'Cinzel', serif; color: #fff; font-size: 38px; letter-spacing: 6px; text-shadow: 0 4px 15px rgba(255, 255, 255, 0.5), 0 0 30px rgba(212, 175, 55, 0.8); margin: 10px 0 0 0; opacity: 0; animation: luxuriousFadeIn 1.5s forwards 0.5s;">TANMAY VANSH</h1>
-                    </div>
+    <div id="start-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background: #0f172a; z-index: 1010;">
+        <button onclick="startIntroSequence()" style="font-size: 18px; padding: 15px 40px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); animation: popUp 1s infinite alternate;">Tap to Enter Arena</button>
+    </div> 
 
-                    <div id="game-title-intro" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1005;">
-                        <h1 style="font-family: 'Cinzel', serif; color: #fff; font-size: 48px; letter-spacing: 8px; text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 30px rgba(212, 175, 55, 1); margin: 0; opacity: 0; animation: luxuriousFadeIn 1.5s forwards;">Hands of cricket</h1>
-                    </div>
-                    
-                    <div id="intro-loader" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Cinzel', serif; color: #d4af37; font-size: 24px; font-weight: bold; text-shadow: 0 0 15px rgba(212, 175, 55, 1);">Loading Arena<span class="dots"></span></div>
-                </div>
+    <div id="dev-intro-text" style="display: none; position: absolute; z-index: 1005; text-align: center;">
+        <h2 style="font-family: 'Cinzel', serif; color: #d4af37; font-size: 24px; letter-spacing: 4px; text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);">DEVELOPED BY</h2>
+        <h1 style="font-family: 'Cinzel', serif; color: #fff; font-size: 38px; letter-spacing: 6px; text-shadow: 0 4px 15px rgba(255, 255, 255, 0.5);">TANMAY VANSH</h1>
+    </div>
+
+    <div id="game-title-intro" style="display: none; position: absolute; z-index: 1006; text-align: center;">
+        <h1 style="font-family: 'Cinzel', serif; color: #fff; font-size: 48px; letter-spacing: 8px; text-shadow: 0 0 30px #d4af37;">Hands of cricket</h1>
+    </div>
+
+    <div id="logo-container" style="display: none; position: absolute; z-index: 1007;">
+        <img src="E:\public\Gemini_Generated_Image_6cldlr6cldlr6cld.png">
+    </div>
+    
+    <div id="intro-loader" style="display: none; position: absolute; bottom: 10%; font-family: 'Cinzel', serif; color: #d4af37; font-size: 20px; z-index: 1008;">Loading Arena<span class="dots"></span></div>
+</div>
                 <div class="header-container">
                     <button id="back-btn" class="back-btn" onclick="goBack()" style="display:none;">⬅ Back</button>
                     <h1>🏏 Hands Of Cricket</h1>
@@ -2289,6 +2321,27 @@
                                         });
                                     }   
 
+                                function sendOnlineTossDecision(userBats) {
+    // ૧. નિર્ણય સેટ કરો
+    tossDecision = userBats ? 'Bat' : 'Bowl';
+    isUserBatting = userBats;
+    userBatFirst = userBats;
+
+    // ૨. ગેસ્ટ પ્લેયરને ડેટા મોકલો
+    if (gameMode === 'online' && conn && conn.open) {
+        conn.send({ type: 'TOSS_DECISION', guestBatting: !userBats });
+    }
+
+    // ૩. સેફ્ટી ચેક: ટીમ લોડ ના થઈ હોય તો કરી લો
+    if (!teamAI || teamAI.length < 12) {
+        teamAI = db.slice(12, 24);
+        resetMatchStats(teamAI);
+    }
+
+    // ૪. મેદાનમાં આ મામલો આવે... (Transition સાથે શરૂ)
+    startMatchWithTransition(userBats);
+}
+
                                     function handleDraftAction() { confirmTeam(); }
 
                                     function confirmTeam() {
@@ -2311,73 +2364,118 @@
                                     }
                                     
                                     function startPreMatch(aiDrafts) {
-                                        if(aiDrafts) {
-                                            teamAI = [];
-                                            let tempBatters = db.filter(p => p.role === "Batter").sort(() => 0.5 - Math.random());
-                                            let tempBowlers = db.filter(p => p.role === "Bowler").sort(() => 0.5 - Math.random());
-                                            for (let i = 0; i < 7; i++) teamAI.push(tempBatters[i]);
-                                            for (let i = 0; i < 5; i++) teamAI.push(tempBowlers[i]);
-                                        }
-                                        resetMatchStats(teamUser); resetMatchStats(teamAI);
-                                        
-                                        document.getElementById('toss-prompt').innerText = `${userName}, call it in the air${isTournamentMatch ? ' for the Championship' : ''}!`;
-                                        showScreen('screen-toss');
-                                    }
+    if(aiDrafts) {
+        teamAI = [];
+        let tempBatters = db.filter(p => p.role === "Batter").sort(() => 0.5 - Math.random());
+        let tempBowlers = db.filter(p => p.role === "Bowler").sort(() => 0.5 - Math.random());
+        for (let i = 0; i < 7; i++) teamAI.push(tempBatters[i]);
+        for (let i = 0; i < 5; i++) teamAI.push(tempBowlers[i]);
+    }
+    
+    // બધો ડેટા ઝીરો કરો
+    resetMatchStats(teamUser); 
+    resetMatchStats(teamAI);
+    
+    // ટૉસના બટન્સ પાછા લાવો અને જૂનું લખાણ કાઢી નાખો
+    document.getElementById('toss-buttons').style.display = "flex";
+    document.getElementById('toss-result').innerHTML = "";
+    document.getElementById('toss-prompt').innerText = `${userName}, call it in the air!`;
+
+    showScreen('screen-toss');
+}
+
+
         function playToss(userChoice) {
-            let result = Math.floor(Math.random() * 2);
-            let tossDiv = document.getElementById('toss-result');
-            document.getElementById('toss-buttons').style.display = "none";
+    let result = Math.floor(Math.random() * 2);
+    let tossDiv = document.getElementById('toss-result');
+    document.getElementById('toss-buttons').style.display = "none";
 
-            if (userChoice === result) {
-                tossWinnerName = userName;
-                tossDiv.innerHTML = `<p class="hl-gold">You Won the Toss!</p>
-                                    <button onclick="handleTossDecision(true)">Bat First</button>
-                                    <button onclick="handleTossDecision(false)">Bowl First</button>`;
-            } else {
-                if(gameMode === 'local') {
-                    tossWinnerName = p2Name;
-                    tossDiv.innerHTML = `<p class="hl-blue">${p2Name} Won the Toss!</p>
-                                        <button onclick="handleTossDecision(false)">Bat First</button>
-                                        <button onclick="handleTossDecision(true)">Bowl First</button>`;
-                } else if (gameMode === 'online') {
-                    conn.send({ type: 'TOSS_RESULT', hostWon: false });
-                    tossDiv.innerHTML = `<p class="hl-red">Opponent won the toss. Waiting for decision...</p>`;
-                } else {
-                    tossWinnerName = p2Name;
-                    let aiBat = Math.random() > 0.5;
-                    
-                    let startFunc = 'startMatch';
-                    if (isTournamentMatch) startFunc = 'startTourneyMatch';
-                    else if (currentTourneyName === 'Classic Test Match') startFunc = 'startTestMatch';
-
-                    tossDiv.innerHTML = `<p class="hl-red">Opponent won the Toss and chose to ${aiBat ? 'Bat' : 'Bowl'}!</p>
-                                        <button onclick="${startFunc}(${!aiBat})">Continue</button>`;
-                }
-            }
+    if (userChoice === result) {
+        // ૧. તમે ટોસ જીત્યા
+        tossWinnerName = userName;
+        tossDiv.innerHTML = `<p class="hl-gold">You Won the Toss!</p>`;
+        
+        if (gameMode === 'online') {
+            // ઓનલાઈન મોડમાં 'sendOnlineTossDecision' વાપરવું જરૂરી છે
+            tossDiv.innerHTML += `
+                <button onclick="sendOnlineTossDecision(true)">Bat First</button>
+                <button onclick="sendOnlineTossDecision(false)">Bowl First</button>`;
+        } else {
+            // લોકલ કે સિંગલ પ્લેયરમાં જૂનું ફંક્શન બરાબર છે
+            tossDiv.innerHTML += `
+                <button onclick="handleTossDecision(true)">Bat First</button>
+                <button onclick="handleTossDecision(false)">Bowl First</button>`;
         }
+    } else {
+        // ૨. સામે વાળો પ્લેયર ટોસ જીત્યો
+        if (gameMode === 'local') {
+            tossWinnerName = p2Name;
+            tossDiv.innerHTML = `<p class="hl-blue">${p2Name} Won the Toss!</p>
+                                <button onclick="handleTossDecision(false)">Bat First</button>
+                                <button onclick="handleTossDecision(true)">Bowl First</button>`;
+        } else if (gameMode === 'online') {
+            // સામે વાળા (Guest) ને મેસેજ મોકલો કે તે જીત્યો છે
+            tossWinnerName = p2Name;
+            if(conn && conn.open) {
+                conn.send({ type: 'TOSS_RESULT', hostWon: false });
+            }
+            tossDiv.innerHTML = `<p class="hl-red">Opponent won the toss. Waiting for decision...</p>`;
+        } else {
+            // Vs AI (Single Player)
+            tossWinnerName = p2Name;
+            let aiBat = Math.random() > 0.5;
+            
+            let startFunc = 'startMatch';
+            if (isTournamentMatch) startFunc = 'startTourneyMatch';
+            else if (currentTourneyName === 'Classic Test Match') startFunc = 'startTestMatch';
 
+            tossDiv.innerHTML = `<p class="hl-red">Opponent won the Toss and chose to ${aiBat ? 'Bat' : 'Bowl'}!</p>
+                                <button onclick="${startFunc}(${!aiBat})">Continue</button>`;
+        }
+    }
+}
         // 👇 આ ફંક્શન ગાયબ હતું, આનાથી જ મેચ ચાલુ થશે! 👇
         // ૧. ટોસ પછી નિર્ણય લેવાનું મેઈન ફંક્શન
-        function handleTossDecision(userBats) {
-            tossDecision = userBats ? 'Bat' : 'Bowl';
-            
-            if (gameMode === 'online') {
-                conn.send({ type: 'TOSS_RESULT', hostWon: true, hostBatting: userBats });
-            }
-            
-            // AI ની ટીમ લોડ ન થઈ હોય તો ભરી દેવી (Crash Safety)
-            if (!teamAI || teamAI.length < 12) {
-                teamAI = [];
-                let tempBatters = db.filter(p => p.role === "Batter").sort(() => 0.5 - Math.random());
-                let tempBowlers = db.filter(p => p.role === "Bowler").sort(() => 0.5 - Math.random());
-                for (let i = 0; i < 7; i++) teamAI.push(tempBatters[i]);
-                for (let i = 0; i < 5; i++) teamAI.push(tempBowlers[i]);
-                resetMatchStats(teamAI);
-            }
+      function handleTossDecision(userBats) {
+    // ૧. નિર્ણય સેટ કરો
+    tossDecision = userBats ? 'Bat' : 'Bowl';
+    isUserBatting = userBats;
+    userBatFirst = userBats;
 
-            // કયો મોડ છે એ મુજબ મેચ ચાલુ કરો
-            startMatchByMode(userBats);
+    // ૨. જો ઓનલાઇન હોય તો હોસ્ટ તરીકે ડેટા મોકલો
+    if (gameMode === 'online' && conn && conn.open) {
+        conn.send({ type: 'TOSS_RESULT', hostWon: true, hostBatting: userBats });
+    }
+
+    // ૩. સેફ્ટી ચેક: જો AI ટીમ ના હોય તો બનાવી દો (Crash બચાવવા)
+    if (!teamAI || teamAI.length < 12) {
+        teamAI = db.slice(12, 24);
+        resetMatchStats(teamAI);
+    }
+
+    // ૪. મેદાનમાં આ મામલો આવે... (Transition સાથે શરૂ)
+    startMatchWithTransition(userBats);
+}
+
+     function startMatchWithTransition(userBatsFirst) {
+    let tossDiv = document.getElementById('toss-result');
+    // મસ્ત ગુજરાતી ડાયલોગ
+    tossDiv.innerHTML = `<h2 style="color:#d4af37; font-family:'Cinzel'; animation: popUp 0.5s forwards; padding:20px;">
+        ${translations[currentLang].tossTransition}
+    </h2>`;
+    
+    playSFX(audioBlast); 
+
+    setTimeout(() => {
+        if(isTournamentMatch) {
+            startTourneyMatch(userBatsFirst);
+        } else if (currentTourneyName === "Classic Test Match") {
+            startTestMatch(userBatsFirst);
+        } else {
+            startMatch(userBatsFirst);
         }
+    }, 2500); 
+}
 
         // ૨. મોડ મુજબ મેચ ફિલ્ટર કરવાનું ફંક્શન
         function startMatchByMode(userBatsFirst) {
@@ -3054,113 +3152,83 @@ function checkInningsStatus() {
     isMatchOngoing = false; 
     stopBallTimer(); 
 
-    // ૧. સ્કોર અને વિકેટ નક્કી કરો
     let p1BatScore = userBatFirst ? scoreInnings1 : runs; 
-    let p1BatWickets = userBatFirst ? wicketsInnings1 : wickets;
     let p2BatScore = userBatFirst ? runs : scoreInnings1; 
+    let p1BatWickets = userBatFirst ? wicketsInnings1 : wickets;
     let p2BatWickets = userBatFirst ? wickets : wicketsInnings1;
 
-    let scoreA = p1BatScore;
-    let scoreB = p2BatScore;
+    let p1Won = p1BatScore > p2BatScore;
+    let p2Won = p2BatScore > p1BatScore;
+    let isTie = p1BatScore === p2BatScore;
 
-    let team1 = userBatFirst ? teamUser : teamAI;
-    let team2 = userBatFirst ? teamAI : teamUser;
+    // ૧. ફની પોપ-અપ (જો યુઝર જીતે તો)
+    if (p1Won) {
+        let funnyOverlay = document.createElement('div');
+        funnyOverlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; display:flex; justify-content:center; align-items:center; flex-direction:column; text-align:center; backdrop-filter:blur(15px); border: 4px solid #d4af37;";
+        funnyOverlay.innerHTML = `
+            <h1 style="color:#d4af37; font-family:'Cinzel'; font-size:32px; padding:30px; line-height:1.4; animation:luxuriousFadeIn 1s forwards;">
+                ${translations[currentLang].funnyQuote}
+            </h1>
+            <div style="font-size:50px;">🦅🔥</div>
+        `;
+        document.body.appendChild(funnyOverlay);
+        playSFX(audioWin);
+        setTimeout(() => funnyOverlay.remove(), 3500); // ૩.૫ સેકન્ડ પછી હટશે
+    }
 
-    let t1Balls = team1.reduce((sum, p) => sum + p.balls_faced, 0);
-    let t2Balls = team2.reduce((sum, p) => sum + p.balls_faced, 0);
+    // ૨. પ્રીમિયમ સમરી કાર્ડ (તારી ઇમેજ જેવી ડિઝાઇન)
+    let p1NameDisp = (gameMode === 'local' || gameMode === 'online') ? userName : "YOU";
+    let winnerName = p1Won ? p1NameDisp : (p2Won ? p2Name : "Match Tied");
+    let winMargin = p1Won ? (userBatFirst ? `${p1BatScore - p2BatScore} Runs` : `${11 - p1BatWickets} Wickets`) : 
+                           (p2Won ? (!userBatFirst ? `${p2BatScore - p1BatScore} Runs` : `${11 - p2BatWickets} Wickets`) : "");
 
-    // ૨. પ્લેયર સ્ટેટ્સ અપડેટ કરો
+    let summaryHtml = `
+        <div style="background: linear-gradient(180deg, #1e293b 0%, #000 100%); border: 2px solid #d4af37; border-radius: 20px; padding: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); margin-bottom: 25px; position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-10px; right:-10px; font-size:80px; opacity:0.05;">🏏</div>
+            <h3 style="color:#d4af37; font-family:'Cinzel'; letter-spacing:2px; margin-top:0; border-bottom:1px solid rgba(212,175,55,0.3); padding-bottom:12px; font-size:16px;">
+                ${translations[currentLang].summaryTitle}
+            </h3>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0;">
+                <div style="text-align:left;">
+                    <span style="color:#94a3b8; font-size:10px; letter-spacing:1px; text-transform:uppercase;">Team Alpha</span><br>
+                    <span style="font-weight:800; font-size:19px; color:#fff;">${userBatFirst ? p1NameDisp : p2Name}</span>
+                </div>
+                <div style="font-size:24px; font-weight:900; color:#ffd700; font-family:'Montserrat';">
+                    ${userBatFirst ? p1BatScore : p2BatScore}/${userBatFirst ? p1BatWickets : p2BatWickets}
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0; border-top: 1px solid rgba(255,255,255,0.05); padding-top:20px;">
+                <div style="text-align:left;">
+                    <span style="color:#94a3b8; font-size:10px; letter-spacing:1px; text-transform:uppercase;">Team Beta</span><br>
+                    <span style="font-weight:800; font-size:19px; color:#fff;">${!userBatFirst ? p1NameDisp : p2Name}</span>
+                </div>
+                <div style="font-size:24px; font-weight:900; color:#ffd700; font-family:'Montserrat';">
+                    ${!userBatFirst ? p1BatScore : p2BatScore}/${!userBatFirst ? p1BatWickets : p2BatWickets}
+                </div>
+            </div>
+
+            <div style="background:linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent); color:#ffd700; padding:12px; border-radius:10px; font-weight:bold; margin-top:15px; border:1px solid rgba(212,175,55,0.4); text-transform:uppercase; font-size:13px; letter-spacing:1px;">
+                ${isTie ? "MATCH TIED!" : `${winnerName} WON BY ${winMargin}`}
+            </div>
+        </div>
+    `;
+
+    // આંકડા અપડેટ કરો
     updateCareerStats(teamUser);
     updateCareerStats(teamAI);
 
-    let p1Won = scoreA > scoreB;
-    let p2Won = scoreB > scoreA;
-    let isTie = scoreA === scoreB;
-
-    // ૩. રિવોર્ડ્સ અને કોઈન્સ લોજિક
-    let matchPoints = p1Won ? 500 : (isTie ? 200 : 100);
-    let earnedCoins = 0;
-    if (currentTourneyName === 'HANDS Cup') {
-        earnedCoins = p1Won ? 500 : (isTie ? 1 : -100);
-        matchPoints = p1Won ? 1000 : 200;
-    } else {
-        earnedCoins = p1Won ? 100 : (isTie ? 1 : 10);
-    }
-
-    userCoins += earnedCoins;
-    userPoints += matchPoints;
-
-    // ૪. લેવલ અપ ચેક
-    let oldLevel = userLevel;
-    while (userPoints >= userLevel * 500) {
-        userPoints -= userLevel * 500;
-        userLevel++;
-    }
-
-    // UI અને કરન્સી અપડેટ
-    if(typeof updateCurrencyUI === "function") updateCurrencyUI();
-
-    // ૫. ગ્લોબલ લીડરબોર્ડ અપડેટ
-    let statType = isTournamentMatch ? 'tourney' : 'world';
-    let userIndex = globalLeaderboard.findIndex(u => u.name.toLowerCase() === userName.toLowerCase());
-    if(userIndex !== -1) {
-        if(!globalLeaderboard[userIndex][statType]) {
-            globalLeaderboard[userIndex][statType] = { m:0, w:0, l:0, ties:0, pts:0, runsScored:0, ballsFaced:0, runsConceded:0, ballsBowled:0 };
-        }
-        let lb = globalLeaderboard[userIndex][statType];
-        lb.m++;
-        if(p1Won) { lb.w++; lb.pts += 2; }
-        else if(p2Won) { lb.l++; lb.pts -= 2; }
-        else { lb.ties++; lb.pts += 1; }
-        lb.runsScored += scoreA; lb.ballsFaced += t1Balls;
-        lb.runsConceded += scoreB; lb.ballsBowled += t2Balls;
-    }
-
-    // ૬. વિનિંગ માર્જિન અને ટાઇટલ સેટ કરો
-    let p1NameDisp = (gameMode === 'local' || gameMode === 'online') ? userName : "YOU";
-    let winMargin = "";
-    if (p1Won) {
-        winMargin = userBatFirst ? `${scoreA - scoreB} Runs` : `${11 - p1BatWickets} Wickets`;
-    } else if (p2Won) {
-        winMargin = !userBatFirst ? `${scoreB - scoreA} Runs` : `${11 - p2BatWickets} Wickets`;
-    }
-
-    let title = document.getElementById('final-result-title');
-    if (p1Won) { title.innerText = `🏆 ${p1NameDisp} WON!`; title.style.color = "#d4af37"; playSFX(audioWin); }
-    else if (p2Won) { title.innerText = `💀 ${p2Name} WON!`; title.style.color = "#f43f5e"; }
-    else { title.innerText = "🤝 MATCH TIED!"; title.style.color = "#fff"; }
-
-    // ૭. PLAYER OF THE MATCH (તમારી સ્પેશ્યિલ ડિઝાઇન)
+    // Player of the Match logic (તારો જૂનો કોડ)
     let mom = teamUser[0]; let momScore = -1; let momTeam = userName;
     teamUser.forEach(p => { let s = (p.runs_scored*5) + (p.wickets_taken*50); if(s > momScore) { momScore = s; mom = p; } });
     teamAI.forEach(p => { let s = (p.runs_scored*5) + (p.wickets_taken*50); if(s > momScore) { momScore = s; mom = p; momTeam = p2Name; } });
 
     document.getElementById('mom-details').innerHTML = `
-        <h3 style="color:#d4af37; margin-top:0;">🌟 PLAYER OF THE MATCH 🌟</h3>
-        <img src="${mom.avatar}" style="width:50px; height:50px; border-radius:50%; border:2px solid #d4af37; margin-bottom:10px;">
-        <p style="font-size: 16px; font-weight: 600; margin: 0 0 5px 0;">${mom.name} <span style="font-size:11px; color:#94a3b8; font-weight:normal;">(${momTeam})</span></p>
-        <p style="margin:0; font-size:12px;">${mom.runs_scored} Runs &nbsp;|&nbsp; ${mom.wickets_taken} Wickets</p>`;
-
-    // ૮. DETAILED SCORE SUMMARY (તમારી સ્પેશ્યિલ ડિઝાઇન)
-    let formatOvers = (b) => `${Math.floor(b/6)}.${b%6}`;
-    let summaryHtml = `
-        <div style="background: linear-gradient(to bottom, #1e293b, #0f172a); padding: 15px; border-radius: 12px; border: 2px solid #d4af37; margin-bottom: 20px;">
-            <div style="display:flex; justify-content:space-between; color:#fff; font-weight:bold; border-bottom:1px solid #334155; padding-bottom:10px; margin-bottom:10px;">
-                <span>${userBatFirst ? p1NameDisp : p2Name}</span>
-                <span>${userBatFirst ? scoreA : scoreB}/${userBatFirst ? p1BatWickets : p2BatWickets} (${formatOvers(userBatFirst ? t1Balls : t2Balls)})</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; color:#fff; font-weight:bold;">
-                <span>${!userBatFirst ? p1NameDisp : p2Name}</span>
-                <span>${!userBatFirst ? scoreA : scoreB}/${!userBatFirst ? p1BatWickets : p2BatWickets} (${formatOvers(!userBatFirst ? t1Balls : t2Balls)})</span>
-            </div>
-            <div style="background:#ffd700; color:#000; font-size:12px; font-weight:bold; margin-top:15px; padding:5px; border-radius:4px; text-align:center;">
-                ${isTie ? "MATCH TIED!" : (p1Won ? p1NameDisp : p2Name) + " WON BY " + winMargin}
-            </div>
-        </div>
-        <div style="text-align:center; color:#94a3b8; font-size:13px;">
-            🪙 ${earnedCoins > 0 ? '+'+earnedCoins : earnedCoins} Coins | +${matchPoints} XP
-            ${userLevel > oldLevel ? `<br><span style="color:#00ffcc; font-weight:bold;">🎉 LEVEL UP! Level ${userLevel}</span>` : ''}
-        </div>`;
+        <h3 style="color:#d4af37; margin-top:0; font-size:14px;">🌟 PLAYER OF THE MATCH 🌟</h3>
+        <img src="${mom.avatar}" style="width:60px; height:60px; border-radius:50%; border:2px solid #d4af37; margin-bottom:10px; box-shadow:0 0 15px rgba(212,175,55,0.5);">
+        <p style="font-size: 16px; font-weight: 600; margin: 0 0 5px 0; color:#fff;">${mom.name} <span style="font-size:11px; color:#94a3b8;">(${momTeam})</span></p>
+        <p style="margin:0; font-size:12px; color:#ffd700;">${mom.runs_scored} Runs &nbsp;|&nbsp; ${mom.wickets_taken} Wickets</p>`;
 
     document.getElementById('detailed-match-summary').innerHTML = summaryHtml;
 
@@ -3660,12 +3728,23 @@ function checkInningsStatus() {
 
                                     // મેચ પૂરી થયા પછી હોમ પર જવા માટેનું નવું ફંક્શન
                                     function goToHome() {
-                                        if (isTournamentMatch) {
-                                            showScreen('screen-world-cup');
-                                        } else {
-                                            showScreen('screen-mode');
-                                        }
-                                    }
+    screenHistory = ['screen-mode']; 
+    
+    // એડમિન બટન કાઢી નાખો જો હોય તો
+    let adminBtn = document.getElementById('admin-sim-btn');
+    if(adminBtn) adminBtn.remove();
+
+    if (isTournamentMatch) {
+        showScreen('screen-world-cup', true);
+        if (currentTourneyName === "Champ Cup") {
+            checkAndPlayChampMatch();
+        } else {
+            checkAndPlayMatch();
+        }
+    } else {
+        showScreen('screen-mode', true);
+    }
+}
 
                                     // ==========================================
                                     // === CHAMPIONSHIP & TIMEOUT LOGIC (NEW) ===
@@ -5217,54 +5296,52 @@ function checkInningsStatus() {
                     }, 2000); // ૨ સેકન્ડ બ્લેક સ્ક્રીન
                 }
 
-                function playIntroContent() {
-                    const introScreen = document.getElementById('screen-intro');
-                    const introLoader = document.getElementById('intro-loader');
-                    const devText = document.getElementById('dev-intro-text'); 
-                    const gameTitleText = document.getElementById('game-title-intro'); 
-                    const introSound = document.getElementById('sfx-intro-classic'); 
+               function playIntroContent() {
+    const introSound = document.getElementById('sfx-intro-classic');
+    const devText = document.getElementById('dev-intro-text');
+    const gameTitleText = document.getElementById('game-title-intro');
+    const bg1 = document.getElementById('intro-bg-1');
+    const logoCont = document.getElementById('logo-container');
+    const loader = document.getElementById('intro-loader');
 
-                    // ૩. સળંગ સાઉન્ડ ચાલુ કરો
-                    if(introSound) {
-                        introSound.currentTime = 0; 
-                        introSound.volume = 1;
-                        introSound.play().catch(e => console.log("Sound error:", e));
-                    }
+    // ૧. સાઉન્ડ મોટો કરો અને ચાલુ કરો
+    if(introSound) {
+        introSound.volume = 1.0; 
+        introSound.play();
+    }
 
-                    // ૪. "Developed By TANMAY VANSH" બતાવો
-                    if(devText) {
-                        devText.style.display = 'block';
-                    }
+    // ૨. "Developed By" બતાવો
+    devText.style.display = 'block';
 
-                    // ૫. 3.5 સેકન્ડ પછી તમારું નામ છુપાવો અને "Hands of cricket" લાવો 
+    // ૩. ૧ સેકન્ડ પછી બ્લર કરો અને પહેલી ઈમેજ લાવો
+    setTimeout(() => {
+        devText.classList.add('blur-transition');
+        setTimeout(() => {
+            devText.style.display = 'none';
+            bg1.style.display = 'block'; // પહેલી ઈમેજ
+            
+            // ૪. ૨ સેકન્ડ પછી "Hands of Cricket" ટાઈટલ લાવો
+            setTimeout(() => {
+                gameTitleText.style.display = 'block';
+
+                // ૫. ૩ સેકન્ડ પછી ટાઈટલ અને BG હટાવો, બીજો લોગો (Logo) લાવો
+                setTimeout(() => {
+                    gameTitleText.style.display = 'none';
+                    bg1.style.display = 'none';
+                    logoCont.style.display = 'block'; // બીજો લોગો ઈમેજ
+                    loader.style.display = 'block'; // લોડિંગ ચાલુ
+
+                    // ૬. ૨.૫ સેકન્ડ પછી ગેમમાં એન્ટ્રી!
                     setTimeout(() => {
-                        if(devText) devText.style.display = 'none'; 
-                        if(gameTitleText) gameTitleText.style.display = 'block';
+                        document.getElementById('screen-intro').style.display = 'none';
+                        showScreen('screen-login');
+                    }, 2500);
 
-                        // ૬. બીજા 3.5 સેકન્ડ પછી ગેમ ટાઈટલ છુપાવો, સાઉન્ડ બંધ કરો અને લોડિંગ લાવો
-                        setTimeout(() => {
-                            if(gameTitleText) gameTitleText.style.display = 'none'; 
-                            
-                            // સાઉન્ડ બંધ
-                            if(introSound) introSound.pause();
-
-                            introLoader.style.display = 'block'; // Loading ચાલુ
-
-                            // ૭. ૨ સેકન્ડ લોડિંગ પછી મેઈન લોગિન સ્ક્રીન લાવો
-                            setTimeout(() => {
-                                introLoader.style.display = 'none';
-                                introScreen.style.display = 'none';
-                                introScreen.classList.remove('active');
-                                
-                                // ગેમની મેઈન સ્ક્રીન (Login) ચાલુ કરો (પ્રોબ્લેમ સોલ્વ!)
-                                document.getElementById('screen-login').classList.add('active');
-                                
-                            }, 2000); 
-
-                        }, 3500); 
-
-                    }, 3500); 
-                }
+                }, 3000);
+            }, 1500);
+        }, 1000);
+    }, 2000);
+}
                 function closeTourneyWinOverlay() {
             document.getElementById('tourney-win-overlay').style.display = "none";
             goBack(); // મેઈન મેનુમાં પાછા જવા
@@ -5462,7 +5539,10 @@ function checkInningsStatus() {
                 tutSlideCount: "Slide {curr} of {total}",
 
                 // Tutorial 
-                btnLiveTut: "🎮 Play Live Tutorial (Win 5000 Coins!)"
+                btnLiveTut: "🎮 Play Live Tutorial (Win 5000 Coins!)",
+
+                tossTransition: "Now this battle moves to the field...",
+                funnyQuote: "A sparrow can never become a hawk, mate!",
             },
             
             gu: {
@@ -5537,6 +5617,9 @@ function checkInningsStatus() {
                 btnTutPlay: "✅ ચાલો રમીએ!",
                 tutSlideCount: "સ્લાઈડ {curr} / {total}",
                 btnLiveTut: "🎮 લાઈવ ટ્યુટોરિયલ રમો (5000 Coins જીતો!)",
+
+                tossTransition: "હવે આ મામલો મેદાનમાં આવે...",
+                funnyQuote: "ચકલા કોઈ દી બાજ ના બને યાર!",
             },
             
             hi: {
@@ -5610,7 +5693,10 @@ function checkInningsStatus() {
                 btnTutNext: "आगे ➡",
                 btnTutPlay: "✅ चलिए खेलते हैं!",
                 tutSlideCount: "स्लाइड {curr} / {total}",
-                btnLiveTut: "🎮 लाइव ट्यूटोरियल खेलें (5000 Coins जीतें!)"
+                btnLiveTut: "🎮 लाइव ट्यूटोरियल खेलें (5000 Coins जीतें!)",
+
+                tossTransition: "Now this battle moves to the field...",
+                funnyQuote: "A sparrow can never become a hawk, mate!",
             }
         };
 
@@ -5767,6 +5853,32 @@ function checkInningsStatus() {
                 return null;
             }
         }
-                                </script>
+             function openSettings() {
+    // ૧. ડ્રોપડાઉનમાં અત્યારે જે ભાષા છે એ સેટ કરો
+    let langDropdown = document.getElementById('lang-select');
+    if (langDropdown) {
+        langDropdown.value = currentLang;
+    }
+    // ૨. સેટિંગ્સની સ્ક્રીન બતાવો
+    showScreen('screen-settings');
+}
+
+function changeLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('cricpro_lang', lang);
+    
+    // દરેક સ્ક્રીન પરના લખાણ બદલો
+    applyTranslations();
+    
+    // જો સેટિંગ્સમાં ડ્રોપડાઉન બદલાય તો લોગિન વાળું ડ્રોપડાઉન પણ અપડેટ કરી દો
+    let loginLang = document.getElementById('login-lang-select');
+    let settingsLang = document.getElementById('lang-select');
+    if (loginLang) loginLang.value = lang;
+    if (settingsLang) settingsLang.value = lang;
+
+    console.log("Language changed to: " + lang);
+}
+             
+             </script>
                             </body>
                             </html>
