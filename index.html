@@ -609,11 +609,18 @@
                                         </div>
 
                                         <div id="screen-online-hub" class="screen">
-                                            <h2 class="hl-blue">Online Multiplayer</h2>
-                                            <button onclick="hostOnlineGame()">Create Room</button>
-                                            <div id="host-wait-area" style="display:none;"><div class="room-code" id="display-room-id">-----</div><p id="host-status">Waiting...</p></div>
-                                            <input type="text" id="join-room-id" placeholder="Room ID"><button onclick="joinOnlineGame()">Join Room</button>
-                                        </div>
+    <h2 class="hl-blue">Online Multiplayer</h2>
+    <button onclick="hostOnlineGame()">Create Room</button>
+    <div id="host-wait-area" style="display:none;">
+        <div class="room-code" id="display-room-id">-----</div>
+        <p id="host-status">Waiting...</p>
+    </div>
+    
+    <input type="text" id="join-room-id" placeholder="Room ID">
+    <button onclick="joinOnlineGame()">Join Room</button>
+    
+    <p id="join-status" style="color: #f1c40f; font-weight: bold;"></p>
+</div>
 
                                         <div id="screen-p2-login" class="screen">
                                             <h2>Challenger Details</h2>
@@ -1281,31 +1288,37 @@
 
                                    function joinOnlineGame() {
     let inputId = document.getElementById('join-room-id').value.trim().toUpperCase();
-    if(inputId.length !== 5) { alert("Invalid Room ID Format"); return; }
+    let statusEl = document.getElementById('join-status'); // એલિમેન્ટને વેરીએબલમાં લો
+
+    if(inputId.length !== 5) { 
+        if(statusEl) statusEl.innerText = "Invalid Room ID"; 
+        return; 
+    }
     
     isHost = false;
-    document.getElementById('join-room-id').disabled = true; // કનેક્ટિંગ વખતે ફ્રીઝ કરો
+    if(statusEl) {
+        statusEl.innerText = "Connecting...";
+        statusEl.style.color = "#f1c40f";
+    }
 
-    // જોઈન કરનાર માટે રેન્ડમ પિયર આઈડી
     if(!peer) peer = new Peer(); 
 
     peer.on('open', function(myId) {
-        console.log("My Joiner ID: " + myId);
-        
-        // હોસ્ટ સાથે કનેક્ટ કરો
         conn = peer.connect('cricpro-' + inputId);
 
         conn.on('open', function() {
-            console.log("Connected to Host!");
+            if(statusEl) statusEl.innerText = "Connected!";
             conn.send({ type: 'JOIN', name: userName });
             setupNetworkListeners();
             showScreen('screen-waiting');
-            document.getElementById('waiting-msg').innerText = "Connected! Waiting for Host's setup...";
+            document.getElementById('waiting-msg').innerText = "Connected! Waiting for Host...";
         });
 
         conn.on('error', function(err) {
-            alert("Connection Failed! Check Room ID.");
-            document.getElementById('join-room-id').disabled = false;
+            if(statusEl) {
+                statusEl.innerText = "Connection Failed!";
+                statusEl.style.color = "#e94560";
+            }
         });
     });
 }
