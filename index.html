@@ -325,7 +325,7 @@
                 
                <div id="screen-intro" class="screen active" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
     
-    <img id="intro-bg-1" class="intro-img" src="E:\public\Gemini_Generated_Image_q0xgtaq0xgtaq0xg.png">
+    <img id="intro-bg-1" class="intro-img" src="Tanmay Vansh LOGO">
 
     <div id="start-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background: #0f172a; z-index: 1010;">
         <button onclick="startIntroSequence()" style="font-size: 18px; padding: 15px 40px; box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); animation: popUp 1s infinite alternate;">Tap to Enter Arena</button>
@@ -2774,59 +2774,79 @@
                             document.getElementById('test-bowler-name').innerText = curBowler.name;
                             document.getElementById('test-bowler-stats').innerText = `${curBowler.wickets_taken}-${curBowler.runs_given} (${curBowler.overs_bowled})`;
                         }
-                    }
+                    }function handleOverTransition() {
+    // ૧. જો નવી ઓવર ચાલુ થાય (Balls 0 હોય અથવા 6 થી ભગાય તેવી હોય)
+    if (balls === 0 || (balls > 0 && balls % 6 === 0)) {
+        currentBowlerIdx = -1; // બોલર પસંદગી માટે રીસેટ
+        currentBowlerHattrick = 0; // હેટ્રિક કાઉન્ટ રીસેટ
+        
+        // જો રન લીધા હોય તો સ્ટ્રાઈકર બદલો
+        if (balls > 0) {
+            let temp = striker;
+            striker = nonStriker;
+            nonStriker = temp;
+        }
+    }
 
-                                    function handleOverTransition() {
-                    if (balls === 0 || (balls > 0 && balls % 6 === 0)) {
-                        currentBowlerIdx = -1; 
-                        currentBowlerHattrick = 0; 
-                        if (balls > 0) {
-                            let temp = striker; striker = nonStriker; nonStriker = temp; 
-                        }
-                    }
+    // ૨. જો બોલર પસંદ કરવાનો બાકી હોય
+    if (currentBowlerIdx === -1) {
+        stopBallTimer();
+        bowlerSelectionPending = true;
 
-                    if (currentBowlerIdx === -1) {
-                        stopBallTimer();
-                        bowlerSelectionPending = true;
-
-                        if (!isUserBatting || gameMode === 'local') {
-                            document.getElementById('action-area').style.display = "none";
-                            document.getElementById('bowler-selection-area').style.display = "block";
-                            renderBowlerSelection();
-                            logCommentary("Captain needs to select a bowler.");
-                        } else if (gameMode === 'online' && isUserBatting) {
-                            document.getElementById('action-area').style.display = "none";
-                            document.getElementById('bowler-selection-area').style.display = "none";
-                            logCommentary("Waiting for opponent to select Bowler...");
-                        } else {
-                            let validBowlers = [];
-                            for(let i=0; i<TEAM_SIZE; i++) {
-                                if (teamAI[i].role === "Bowler") {
-                                    let ov = teamAI[i].overs_bowled;
-                                    if (ov < limitPerBowler || (ov === limitPerBowler && !highLimitUsed)) validBowlers.push(i);
-                                }
-                            }
-                            if (validBowlers.length === 0) {
-                                for(let i=0; i<TEAM_SIZE; i++) {
-                                    let ov = teamAI[i].overs_bowled;
-                                    if (ov < limitPerBowler || (ov === limitPerBowler && !highLimitUsed)) validBowlers.push(i);
-                                }
-                            }
-                            if (validBowlers.length === 0) validBowlers = [0,1,2,3,4,5,6,7,8,9,10,11]; 
-
-                            currentBowlerIdx = validBowlers[Math.floor(Math.random() * validBowlers.length)];
-                            if (teamAI[currentBowlerIdx].overs_bowled === limitPerBowler) highLimitUsed = true;
-                            teamAI[currentBowlerIdx].overs_bowled++;
-                            currentBowlerHattrick = 0; 
-                            updateScoreBoard();
-                            logCommentary(`Opponent brings ${teamAI[currentBowlerIdx].name} into the attack.`);
-                            
-                            prepareNextBall();
-                        }
-                    } else {
-                        prepareNextBall();
+        // --- મલ્ટિપ્લેયર અને લોકલ મોડ ફિક્સ ---
+        
+        // કન્ડિશન A: જો તમે બોલિંગ કરો છો અથવા Local (Pass & Play) રમો છો
+        if (!isUserBatting || gameMode === 'local') {
+            document.getElementById('action-area').style.display = "none";
+            document.getElementById('bowler-selection-area').style.display = "block";
+            renderBowlerSelection();
+            logCommentary("Captain needs to select a bowler.");
+        } 
+        // કન્ડિશન B: જો Online મેચ હોય અને તમે બેટિંગ કરો છો (સામેવાળો પસંદ કરે ત્યાં સુધી રાહ જુઓ)
+        else if (gameMode === 'online' && isUserBatting) {
+            document.getElementById('action-area').style.display = "none";
+            document.getElementById('bowler-selection-area').style.display = "none";
+            logCommentary("Waiting for opponent to select Bowler...");
+        } 
+        // કન્ડિશન C: Single Player (Vs AI) - AI તમારી શરતો મુજબ બોલર પસંદ કરશે
+        else {
+            let validBowlers = [];
+            for (let i = 0; i < TEAM_SIZE; i++) {
+                // ફક્ત એવા બોલર્સ જેની લિમિટ બાકી હોય
+                if (teamAI[i].role === "Bowler") {
+                    let ov = teamAI[i].overs_bowled;
+                    if (ov < limitPerBowler || (ov === limitPerBowler && !highLimitUsed)) {
+                        validBowlers.push(i);
                     }
                 }
+            }
+            
+            // સેફ્ટી ચેક: જો કોઈ બોલર ના મળે તો લિસ્ટમાંથી ગમે તે પકડો
+            if (validBowlers.length === 0) {
+                validBowlers = [7, 8, 9, 10, 11]; 
+            }
+
+            currentBowlerIdx = validBowlers[Math.floor(Math.random() * validBowlers.length)];
+            
+            // હાઈ લિમિટ લોજિક અપડેટ
+            if (teamAI[currentBowlerIdx].overs_bowled === limitPerBowler) {
+                highLimitUsed = true;
+            }
+            
+            teamAI[currentBowlerIdx].overs_bowled++;
+            currentBowlerHattrick = 0; 
+            
+            updateScoreBoard();
+            logCommentary(`Opponent brings ${teamAI[currentBowlerIdx].name} into the attack.`);
+            
+            // બોલર મળી ગયો, હવે ગેમ ચાલુ કરો
+            prepareNextBall();
+        }
+    } else {
+        // ૩. જો બોલર પહેલેથી મેદાનમાં હોય (ઓવરની વચ્ચે)
+        prepareNextBall();
+    }
+}
 
                                     function renderBowlerSelection() {
                                         let container = document.getElementById('bowler-list-container');
@@ -2912,135 +2932,140 @@
                                     }
 
                                     function executeBall(batFinger, bowlFinger) {
-                    isAnimating = true;
+    isAnimating = true;
 
-                    let userVisualMove = isUserBatting ? batFinger : bowlFinger;
-                    userMoveHistory.push(userVisualMove);
+    let userVisualMove = isUserBatting ? batFinger : bowlFinger;
+    userMoveHistory.push(userVisualMove);
 
-                    let batTeam = isUserBatting ? teamUser : teamAI;
-                    let bowlTeam = isUserBatting ? teamAI : teamUser;
-                    let batter = batTeam[striker];
-                    let bowler = bowlTeam[currentBowlerIdx];
+    let batTeam = isUserBatting ? teamUser : teamAI;
+    let bowlTeam = isUserBatting ? teamAI : teamUser;
+    let batter = batTeam[striker];
+    let bowler = bowlTeam[currentBowlerIdx];
 
-                    if (gameMode === 'single') {
-                        // માત્ર AI બોલિંગ કરતું હોય ત્યારે જ ચીટિંગ કરી શકે 
-                        if (isUserBatting && bowler.bowling_skill >= 8 && Math.random() < 0.25) {
-                            bowlFinger = batFinger; 
-                        }
-                        // માત્ર AI બેટિંગ કરતું હોય ત્યારે જ તે આઉટ થતાં બચીને 4, 5, 6 મારી શકે (તમારો શૉટ નહિ બદલાય)
-                        if (!isUserBatting && batter.batting_power >= 8 && batFinger === bowlFinger && Math.random() < 0.3) {
-                            batFinger = [4, 5, 6][Math.floor(Math.random() * 3)]; 
-                        }
-                    }
+    // ✨ મલ્ટિપ્લેયર સેફ્ટી: જો રમત 'Single' હોય તો જ AI પોતાની બુદ્ધિ વાપરશે
+    if (gameMode === 'single') {
+        // AI બોલિંગ વખતે ક્યારેક ચીટિંગ કરશે
+        if (isUserBatting && bowler.bowling_skill >= 8 && Math.random() < 0.25) {
+            bowlFinger = batFinger; 
+        }
+        // AI બેટિંગ વખતે ક્યારેક આઉટ થતા બચશે
+        if (!isUserBatting && batter.batting_power >= 8 && batFinger === bowlFinger && Math.random() < 0.3) {
+            batFinger = [4, 5, 6][Math.floor(Math.random() * 3)]; 
+        }
+    }
 
-                    let userVisual = isUserBatting ? batFinger : bowlFinger;
-                    let aiVisual = isUserBatting ? bowlFinger : batFinger;
+    let userVisual = isUserBatting ? batFinger : bowlFinger;
+    let aiVisual = isUserBatting ? bowlFinger : batFinger;
 
-                    let uHand = document.getElementById('user-hand');
-                    let aHand = document.getElementById('ai-hand');
-                    
-                    uHand.innerText = handEmojis[userVisual];
-                    aHand.innerText = handEmojis[aiVisual];
-                    uHand.classList.remove('spin-anim');
-                    aHand.classList.remove('spin-anim');
+    let uHand = document.getElementById('user-hand');
+    let aHand = document.getElementById('ai-hand');
+    
+    // હાથ હલાવવાનું એનિમેશન
+    uHand.innerText = handEmojis[userVisual];
+    aHand.innerText = handEmojis[aiVisual];
+    uHand.classList.remove('spin-anim');
+    aHand.classList.remove('spin-anim');
 
-                    setTimeout(() => {
-                        uHand.innerText = '✊';
-                        aHand.innerText = '✊';
-                        uHand.classList.add('spin-anim');
-                        aHand.classList.add('spin-anim');
-                        isAnimating = false;
+    setTimeout(() => {
+        uHand.innerText = '✊';
+        aHand.innerText = '✊';
+        uHand.classList.add('spin-anim');
+        aHand.classList.add('spin-anim');
+        isAnimating = false;
 
-                        let oldRuns = batter.runs_scored;
-                        let oldWickets = bowler.wickets_taken;
+        let oldRuns = batter.runs_scored;
+        let oldWickets = bowler.wickets_taken;
 
-                        let msg = `<span style="color:#94a3b8;">Bat: ${batFinger} | Bowl: ${bowlFinger}</span> <br>`;
-                        batter.balls_faced++;
-                        batter.energy -= (batter.level > 3) ? 1 : 2;
+        let msg = `<span style="color:#94a3b8;">Bat: ${batFinger} | Bowl: ${bowlFinger}</span> <br>`;
+        batter.balls_faced++;
+        batter.energy -= (batter.level > 3) ? 1 : 2;
 
-                        let popup = document.createElement('div');
-                        popup.className = 'floating-popup';
-                        let actionArea = document.getElementById('action-area');
-                        actionArea.style.position = 'relative';
+        // ફ્લોટિંગ પોપ-અપ બનાવવું
+        let popup = document.createElement('div');
+        popup.className = 'floating-popup';
+        let actionArea = document.getElementById('action-area');
+        actionArea.style.position = 'relative';
 
-                        if (batFinger === bowlFinger) {
-                            popup.innerText = "WICKET!";
-                            popup.classList.add('anim-out');
-                            playSFX(audioOut);
-                            
-                            msg += `<span style="color:#f43f5e; font-weight:bold;">OUT!</span> ${batter.name} is walking back!`;
-                            bowler.wickets_taken++;
-                            bowler.points += 50;
-                            currentBowlerHattrick++; 
-                            checkLevelUp(bowler);
-                            wickets++;
-                            striker = (wickets >= nonStriker) ? wickets + 1 : wickets;
-                        } else {
-                            currentBowlerHattrick = 0; 
-                            if (batFinger === 6) { popup.innerText = "SIX!!"; popup.classList.add('anim-six'); playSFX(audioSix); } 
-                            else if (batFinger === 4) { popup.innerText = "FOUR!"; popup.classList.add('anim-four'); playSFX(audioFour); } 
-                            else { popup.innerText = `+${batFinger} Runs`; popup.classList.add('anim-run'); }
+        // વિકેટ કે રન ચેક કરવા
+        if (batFinger === bowlFinger) {
+            popup.innerText = "WICKET!";
+            popup.classList.add('anim-out');
+            playSFX(audioOut);
+            
+            msg += `<span style="color:#f43f5e; font-weight:bold;">OUT!</span> ${batter.name} is walking back!`;
+            bowler.wickets_taken++;
+            bowler.points += 50;
+            currentBowlerHattrick++; 
+            checkLevelUp(bowler);
+            wickets++;
+            striker = (wickets >= nonStriker) ? wickets + 1 : wickets;
+        } else {
+            currentBowlerHattrick = 0; 
+            if (batFinger === 6) { popup.innerText = "SIX!!"; popup.classList.add('anim-six'); playSFX(audioSix); } 
+            else if (batFinger === 4) { popup.innerText = "FOUR!"; popup.classList.add('anim-four'); playSFX(audioFour); } 
+            else { popup.innerText = `+${batFinger} Runs`; popup.classList.add('anim-run'); }
 
-                            let runColor = (batFinger >= 4) ? "#d4af37" : "#00ffcc";
-                            let runText = batFinger === 6 ? "SIX!" : batFinger === 4 ? "FOUR!" : `${batFinger} runs`;
-                            msg += `Shot! <span style="color:${runColor}; font-weight:bold;">${runText}</span> added.`;
-                            runs += batFinger;
-                            bowler.runs_given += batFinger;
-                            batter.runs_scored += batFinger;
-                            batter.points += batFinger * 5;
-                            checkLevelUp(batter);
-                            if (batFinger % 2 !== 0) { let temp = striker; striker = nonStriker; nonStriker = temp; }
-                        }
+            let runColor = (batFinger >= 4) ? "#d4af37" : "#00ffcc";
+            let runText = batFinger === 6 ? "SIX!" : batFinger === 4 ? "FOUR!" : `${batFinger} runs`;
+            msg += `Shot! <span style="color:${runColor}; font-weight:bold;">${runText}</span> added.`;
+            runs += batFinger;
+            bowler.runs_given += batFinger;
+            batter.runs_scored += batFinger;
+            batter.points += batFinger * 5;
+            checkLevelUp(batter);
+            if (batFinger % 2 !== 0) { let temp = striker; striker = nonStriker; nonStriker = temp; }
+        }
 
-                        actionArea.appendChild(popup);
-                        setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1500);
+        actionArea.appendChild(popup);
+        setTimeout(() => { if (popup.parentNode) popup.remove(); }, 1500);
 
-                        balls++;
-                        if (batter.energy <= 0 && wickets < 11) {
-                            msg += `<br><span style="color:#f1c40f;">🚑 ${batter.name} retired hurt!</span>`;
-                            wickets++;
-                            striker = (wickets >= nonStriker) ? wickets + 1 : wickets;
-                        }
+        balls++;
+        if (batter.energy <= 0 && wickets < 11) {
+            msg += `<br><span style="color:#f1c40f;">🚑 ${batter.name} retired hurt!</span>`;
+            wickets++;
+            striker = (wickets >= nonStriker) ? wickets + 1 : wickets;
+        }
 
-                        logCommentary(msg);
-                        updateScoreBoard();
+        logCommentary(msg);
+        updateScoreBoard();
 
-                        let celTitle = "", celName = "", celSub = "";
-                        let activeAudio = null;
+        // સેલિબ્રેશન લોજિક (Hattrick, 50, 100)
+        let celTitle = "", celName = "", celSub = "";
+        let activeAudio = null;
 
-                        if (batFinger === bowlFinger) {
-                            if (currentBowlerHattrick === 3) {
-                                celTitle = "🎩 HAT-TRICK!"; celName = bowler.name; celSub = "3 Wickets in 3 Balls!";
-                                activeAudio = audioHattrick;
-                            } else if (bowler.wickets_taken === 5 && oldWickets === 4) {
-                                celTitle = "🖐️ 5 WICKET HAUL!"; celName = bowler.name; celSub = "Incredible Bowling Spell!";
-                                activeAudio = audio5W;
-                            }
-                        } else {
-                            if (batter.runs_scored >= 50 && oldRuns < 50) {
-                                celTitle = "🏏 HALF CENTURY!"; celName = batter.name; celSub = `${batter.runs_scored}* Runs`;
-                                activeAudio = audio50;
-                            } else if (batter.runs_scored >= 100 && oldRuns < 100) {
-                                celTitle = "💯 CENTURY!"; celName = batter.name; celSub = `Magnificent 100!`;
-                                activeAudio = audio100;
-                            }
-                        }
+        if (batFinger === bowlFinger) {
+            if (currentBowlerHattrick === 3) {
+                celTitle = "🎩 HAT-TRICK!"; celName = bowler.name; celSub = "3 Wickets in 3 Balls!";
+                activeAudio = audioHattrick;
+            } else if (bowler.wickets_taken === 5 && oldWickets === 4) {
+                celTitle = "🖐️ 5 WICKET HAUL!"; celName = bowler.name; celSub = "Incredible Bowling Spell!";
+                activeAudio = audio5W;
+            }
+        } else {
+            if (batter.runs_scored >= 50 && oldRuns < 50) {
+                celTitle = "🏏 HALF CENTURY!"; celName = batter.name; celSub = `${batter.runs_scored}* Runs`;
+                activeAudio = audio50;
+            } else if (batter.runs_scored >= 100 && oldRuns < 100) {
+                celTitle = "💯 CENTURY!"; celName = batter.name; celSub = `Magnificent 100!`;
+                activeAudio = audio100;
+            }
+        }
 
-                        if (celTitle !== "") {
-                            document.getElementById('cel-title-text').innerText = celTitle;
-                            document.getElementById('cel-name-text').innerText = celName;
-                            document.getElementById('cel-sub-text').innerText = celSub;
-                            document.getElementById('celebration-overlay').style.display = "flex";
-                            if(activeAudio) playSFX(activeAudio);
-                            setTimeout(() => {
-                                document.getElementById('celebration-overlay').style.display = "none";
-                                continuePostBall(); 
-                            }, 3500);
-                        } else {
-                            continuePostBall(); 
-                        }
-                    }, 1200); 
-                }
+        if (celTitle !== "") {
+            document.getElementById('cel-title-text').innerText = celTitle;
+            document.getElementById('cel-name-text').innerText = celName;
+            document.getElementById('cel-sub-text').innerText = celSub;
+            document.getElementById('celebration-overlay').style.display = "flex";
+            if(activeAudio) playSFX(activeAudio);
+            setTimeout(() => {
+                document.getElementById('celebration-overlay').style.display = "none";
+                continuePostBall(); 
+            }, 3500);
+        } else {
+            continuePostBall(); 
+        }
+    }, 1200);  
+}
 
                                     function continuePostBall() {
                                         if (balls > 0 && balls % 6 === 0 && wickets < 11 && balls < maxOvers * 6 && (target === -1 || runs < target)) {
@@ -3115,8 +3140,11 @@ function checkInningsStatus() {
             wicketsInnings1 = wickets;
             target = runs + 1;
             currentInnings = 2;
-            isUserBatting = !isUserBatting; // બેટિંગ-બોલિંગ બદલો
+
+            // ✨ મલ્ટિપ્લેયર ફિક્સ: જેણે પહેલા બેટિંગ કરી હતી (userBatFirst), હવે તેની સામે વાળાનો વારો આવશે.
+            isUserBatting = !userBatFirst; 
             
+            // તમારી સ્પેશિયલ કમેન્ટરી
             logCommentary(`<span class="hl-gold">Innings Break!</span> Target is ${target}`);
             
             stopBallTimer(); 
@@ -3147,6 +3175,8 @@ function checkInningsStatus() {
         handleOverTransition();
     }
 }
+
+
 
                                     function finishMatch() {
     isMatchOngoing = false; 
