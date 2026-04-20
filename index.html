@@ -892,6 +892,15 @@ text-shadow: 0 0 20px #d4af37;
 }
 
     </style>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
+
 </head>
 <body>
 
@@ -965,10 +974,10 @@ text-shadow: 0 0 20px #d4af37;
 
 
     <div id="screen-login" class="screen">
-        <h2 data-i18n="loginWelcome">Welcome to the Pavilion</h2>
-        <p style="color: #94a3b8; margin-bottom: 20px; font-size: 13px; line-height: 1.5;" data-i18n="loginSub">Enter your manager alias to start your legendary career.</p>
+        <h2 data-i18n="loginWelcome" style="font-family: 'Cinzel', serif; font-size: 28px; color: #d4af37; text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); margin-bottom: 5px;">Welcome to the Pavilion</h2>
+        <p style="color: #94a3b8; margin-bottom: 30px; font-size: 13px; line-height: 1.5;" data-i18n="loginSub">Sign in securely to start your legendary career and save your progress globally.</p>
 
-        <div style="margin-bottom: 25px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(212, 175, 55, 0.4);">
+        <div style="margin-bottom: 30px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(212, 175, 55, 0.4);">
             <p style="color: #d4af37; font-size: 13px; margin-top: 0; font-weight: bold; letter-spacing: 1px;" data-i18n="selectLanguage">Select Language / ભાષા પસંદ કરો / भाषा चुनें</p>
             <select id="login-lang-select" onchange="changeLanguage(this.value)" style="width: 100%; margin-bottom: 0;">
                 <option value="en">English</option>
@@ -976,10 +985,33 @@ text-shadow: 0 0 20px #d4af37;
                 <option value="hi">हिंदी (Hindi)</option>
             </select>
         </div>
-        <input type="text" id="username" placeholder="Manager Name" autocomplete="off">
-        <input type="password" id="user-password" placeholder="Set / Enter 4-Digit PIN" autocomplete="off" style="margin-top: 10px;">
-        <br><br>
-        <button onclick="login()" data-i18n="btnEnterArena">Enter Arena</button>
+
+        <button id="google-signin-btn" onclick="signInWithGoogle()" style="
+            background: #fff;
+            color: #757575;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 30px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px 0 rgba(0,0,0,.25);
+            transition: background-color .218s, border-color .218s, box-shadow .218s;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            text-transform: none;
+            letter-spacing: normal;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo" style="width: 20px; height: 20px;">
+            Sign in with Google
+        </button>
+
+        <div id="login-loading-indicator" style="display: none; color: #d4af37; font-weight: bold; margin-top: 15px;">
+            Authenticating... ⏳
+        </div>
     </div>
 
     <div id="screen-tutorial" class="screen">
@@ -2192,6 +2224,8 @@ text-shadow: 0 0 20px #d4af37;
                             // ૧. સૌથી પહેલા આ વેરિએબલ્સ ચેક કરી લો કે ઉપર ડિક્લેર કરેલા છે કે નહીં
                             let isExistingUser = false;
 
+                            let hasDoneDraftTutorial = localStorage.getItem('cricpro_draft_tut') === 'true';
+
                             // === LANGUAGE SETUP (MUST BE AT THE VERY TOP) ===
                             let currentLang = localStorage.getItem('cricpro_lang') || 'gu';
 
@@ -3310,10 +3344,26 @@ hasDoneLongPressTutorial: hasDoneLongPressTutorial
 
 localStorage.setItem("cricket_save_" + userName, JSON.stringify(saveObj));
 
+let currentUser = firebase.auth().currentUser;
+    if (currentUser) {
+        // ફાયરસ્ટોરમાં બેકગ્રાઉન્ડમાં સેવ થવા દો (async રીતે, જેથી ગેમ અટકે નહીં)
+        firestoreDb.collection("users").doc(currentUser.uid).set({
+            gameData: saveObj,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true })
+        .then(() => {
+            console.log("Cloud Save Successful! ☁️");
+        })
+        .catch((error) => {
+            console.error("Cloud Save Failed:", error);
+        });
+    }
+
 // 🌟 MAIN FIX: ડેટાને રિયલ-ટાઈમ સર્વર પર મોકલો 🌟
 if (typeof saveToDrive === "function") {
 saveToDrive(saveObj);
 }
+
 }
 
                                             function fastSave() {
@@ -4128,96 +4178,123 @@ alert("તમારે બરાબર 12 પ્લેયર્સ પસંદ 
 
 setTimeout(() => renderCards(), 100);
 showScreen('screen-draft');
+
 }
 
                             function renderCards() {
-                                let container = document.getElementById('draft-card-container');
-                                if (!container) return; // જો કન્ટેનર ના મળે તો ક્રેશ થતું અટકાવો
+    let container = document.getElementById('draft-card-container');
+    if (!container) return;
+    container.innerHTML = "";
 
-                                container.innerHTML = "";
+    if (!hasDoneDraftTutorial && gameMode !== 'online') {
+        setTimeout(() => {
+            if (!document.getElementById('draft-tut-overlay')) {
+                showDraftTutorial();
+            }
+        }, 500); 
+    }
 
-                                let t = translations[currentLang] || translations['en'];
+    let t = translations[currentLang] || translations['en'];
 
-                                if (!hasDoneLongPressTutorial) {
-                                    let tutMsg = document.createElement('div');
-                                    tutMsg.id = 'long-press-tut-msg';
-                                    tutMsg.style.cssText = "background: #e94560; color: #fff; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; width: 100%; margin-bottom: 15px; font-size: 12px; box-shadow: 0 0 15px rgba(233, 69, 96, 0.6); animation: pulseTut 1.5s infinite;";
-                                    tutMsg.innerHTML = t.tutLongPressMsg; // 👈 ડાયનેમિક ભાષા
-                                    container.appendChild(tutMsg);
-                                }
+    if (!hasDoneLongPressTutorial) {
+        let tutMsg = document.createElement('div');
+        tutMsg.id = 'long-press-tut-msg';
+        tutMsg.style.cssText = "background: #e94560; color: #fff; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; width: 100%; margin-bottom: 15px; font-size: 12px; box-shadow: 0 0 15px rgba(233, 69, 96, 0.6); animation: pulseTut 1.5s infinite;";
+        tutMsg.innerHTML = t.tutLongPressMsg; 
+        container.appendChild(tutMsg);
+    }
 
-                                let btn = document.getElementById('btn-draft-action');
+    let btn = document.getElementById('btn-draft-action');
 
-                                let selectedTotal = teamUser.length;
-                                let batCount = teamUser.filter(p => p.role === "Batter").length;
-                                let bowlCount = teamUser.filter(p => p.role === "Bowler").length;
+    let selectedTotal = teamUser.length;
+    let batCount = teamUser.filter(p => p.role === "Batter").length;
+    let bowlCount = teamUser.filter(p => p.role === "Bowler").length;
 
-                                let statusText = document.getElementById('draft-status');
-                                if(statusText) {
-                                    statusText.innerHTML = `Playing 12 (Batters: ${batCount}/6+ | Bowlers: ${bowlCount}/5+ | Total: ${selectedTotal}/12)`;
-                                }
+    let statusText = document.getElementById('draft-status');
+    if(statusText) {
+        // 🌟 NEW VISUAL COUNTERS (RED / GREEN LOGIC) 🌟
+        let batColor = batCount >= 6 ? "#10b981" : "#f43f5e"; 
+        let bowlColor = bowlCount >= 5 ? "#10b981" : "#f43f5e";
+        let totalColor = selectedTotal === 12 ? "#10b981" : "#d4af37";
 
-                                if(btn) {
-                                    btn.innerText = "✅ Confirm Playing 12";
-                                    // 12 પ્લેયર સિલેક્ટ થયા હોય અને મિનિમમ બેટ્સમેન/બોલર ની શરત પૂરી થતી હોય તો જ બટન ચાલુ થશે
-                                    btn.disabled = !(selectedTotal === TEAM_SIZE && batCount >= 6 && bowlCount >= 5);
-                                    btn.onclick = window.confirmTeam; // અહીં ડાયરેક્ટ ઈવેન્ટ જોડી દીધી
-                                }
+        statusText.style.background = "transparent";
+        statusText.style.padding = "0";
+        statusText.innerHTML = `
+            <div style="display:flex; justify-content:space-between; gap:5px; width:100%; font-size:11px; margin-bottom: 10px;">
+                <div style="background:rgba(0,0,0,0.6); border:1px solid ${batColor}; padding:6px; border-radius:8px; color:#fff; flex:1; text-align:center;">
+                    🏏 Bat: <strong style="color:${batColor}">${batCount}/6+</strong>
+                </div>
+                <div style="background:rgba(0,0,0,0.6); border:1px solid ${bowlColor}; padding:6px; border-radius:8px; color:#fff; flex:1; text-align:center;">
+                    ⚾ Bowl: <strong style="color:${bowlColor}">${bowlCount}/5+</strong>
+                </div>
+                <div style="background:rgba(0,0,0,0.6); border:1px solid ${totalColor}; padding:6px; border-radius:8px; color:#fff; flex:1; text-align:center;">
+                    👥 Total: <strong style="color:${totalColor}">${selectedTotal}/12</strong>
+                </div>
+            </div>
+        `;
+    }
 
-                                draftOptions.forEach(p => {
-                                    let isSelected = teamUser.some(t => t.id === p.id);
-                                    let div = document.createElement('div');
-                                    div.className = `draft-card ${isSelected ? 'selected' : ''}`;
-                                    if(p.tier) div.style.borderBottom = `2px solid ${p.tier.color}`;
+    if(btn) {
+        btn.innerText = "✅ Confirm Playing 12";
+        btn.disabled = !(selectedTotal === TEAM_SIZE && batCount >= 6 && bowlCount >= 5);
+        btn.onclick = window.confirmTeam; 
+    }
 
-                                    let statsHTML = (p.career_runs > 0 || p.career_wickets > 0) ? `<span class="p-stats">Runs: ${p.career_runs} | W: ${p.career_wickets}</span>` : `<span class="p-stats">Debut</span>`;
-                                    let tierLabel = p.tier ? `<span class="p-tier-label" style="color:${p.tier.color};">${p.tier.label} <span class="tan-stars">${p.tier.stars}</span></span>` : '';
+    draftOptions.forEach(p => {
+        let isSelected = teamUser.some(t => t.id === p.id);
+        let div = document.createElement('div');
+        div.className = `draft-card ${isSelected ? 'selected' : ''}`;
+        if(p.tier) div.style.borderBottom = `2px solid ${p.tier.color}`;
 
-                                    div.innerHTML = `
-                                        <img src="${p.avatar}" alt="Avatar">
-                                        <span class="p-name">${p.name}</span>
-                                        <span class="p-role">${p.role} | Lvl ${p.level}</span>
-                                        ${tierLabel}
-                                        ${statsHTML}
-                                    `;
+        let statsHTML = (p.career_runs > 0 || p.career_wickets > 0) ? `<span class="p-stats">Runs: ${p.career_runs} | W: ${p.career_wickets}</span>` : `<span class="p-stats">Debut</span>`;
+        let tierLabel = p.tier ? `<span class="p-tier-label" style="color:${p.tier.color};">${p.tier.label} <span class="tan-stars">${p.tier.stars}</span></span>` : '';
 
+        // 🌟 NEW VISUAL IDENTIFIERS FOR BATTER/BOWLER 🌟
+        let roleBg = p.role === "Batter" ? "#0ea5e9" : "#ea580c";
+        let roleIcon = p.role === "Batter" ? "🏏" : "⚾";
 
-                                    div.onclick = () => {
-                                        if (isLongPressFired) return;
+        div.innerHTML = `
+            <div style="position:absolute; top:4px; right:4px; background:${roleBg}; font-size:8px; padding:2px 5px; border-radius:8px; font-weight:bold; color:#fff; box-shadow:0 2px 4px rgba(0,0,0,0.5);">
+                ${roleIcon} ${p.role}
+            </div>
+            <img src="${p.avatar}" alt="Avatar" style="border: 2px solid ${roleBg};">
+            <span class="p-name">${p.name}</span>
+            <span class="p-role">Lvl ${p.level}</span>
+            ${tierLabel}
+            ${statsHTML}
+        `;
 
-                                        // 🌟 જો લોંગ પ્રેસ ના કર્યું હોય તો ક્લિક નહિ કરવા દે 🌟
-                                        if (!hasDoneLongPressTutorial) {
-                                            alert(t.tutLongPressAlert); // 👈 ડાયનેમિક ભાષાની એરર
-                                            return;
-                                        }
+        div.onclick = () => {
+            if (isLongPressFired) return;
 
-                                        playSFX(audioClick);
-                                        let idx = teamUser.findIndex(t => t.id === p.id);
+            if (!hasDoneLongPressTutorial) {
+                alert(t.tutLongPressAlert); 
+                return;
+            }
 
-                                        if (idx > -1) {
-                                            // અનસિલેક્ટ કરો
-                                            teamUser.splice(idx, 1);
-                                            div.classList.remove('selected');
-                                        } else {
-                                            // સિલેક્ટ કરો (જો 12 થી ઓછા હોય તો જ)
-                                            if (teamUser.length < TEAM_SIZE) {
-                                                teamUser.push(p);
-                                                div.classList.add('selected');
-                                                playSFX(audioBlast);
-                                            } else {
-                                                // જો 12 ફૂલ હોય તો એરર આપો
-                                                let oldBorder = div.style.borderBottom;
-                                                div.style.borderBottom = "2px solid #f43f5e";
-                                                setTimeout(()=> { div.style.borderBottom = oldBorder; }, 500);
-                                            }
-                                        }
-                                        // UI ફરીથી અપડેટ કરો
-                                        setTimeout(() => renderCards(), 100);
-                                    };
-                                    addLongPressEvent(div, p.id);
-                                    container.appendChild(div);
-                                });
-                            }
+            playSFX(audioClick);
+            let idx = teamUser.findIndex(t => t.id === p.id);
+
+            if (idx > -1) {
+                teamUser.splice(idx, 1);
+                div.classList.remove('selected');
+            } else {
+                if (teamUser.length < TEAM_SIZE) {
+                    teamUser.push(p);
+                    div.classList.add('selected');
+                    playSFX(audioBlast);
+                } else {
+                    let oldBorder = div.style.borderBottom;
+                    div.style.borderBottom = "2px solid #f43f5e";
+                    setTimeout(()=> { div.style.borderBottom = oldBorder; }, 500);
+                }
+            }
+            setTimeout(() => renderCards(), 100);
+        };
+        addLongPressEvent(div, p.id);
+        container.appendChild(div);
+    });
+}
 
             // ================= Send Online Toss =============================
 
@@ -5400,13 +5477,13 @@ function showTourneyScorecardModal(title) {
 
             // ============ Innings Status =============================
 
-            // ===============================================================
-                function checkInningsStatus() {
+           function checkInningsStatus() {
     // જો વિકેટ પડી જાય, ઓવર પૂરી થાય અથવા ટાર્ગેટ ચેઝ થઈ જાય
     if (wickets >= 11 || balls >= maxOvers * 6 || (target !== -1 && runs >= target)) {
 
-        // 🌟 એડ બતાવો (અસલી કે નકલી) 🌟
-        triggerMasterAd();
+        // 🌟 ટાઈમર રોકો અને એનિમેશન બ્લોક કરો જેથી માઈનસ રન ના થાય
+        stopBallTimer();
+        isAnimating = true;
 
         if (currentInnings === 1) {
             scoreInnings1 = runs;
@@ -5416,22 +5493,17 @@ function showTourneyScorecardModal(title) {
             isUserBatting = !userBatFirst; // હવે સામે વાળાનો વારો
 
             inningsBreakActive = true;
-            stopBallTimer();
 
-            // 🌟 3 સેકન્ડ પછી સ્કોરકાર્ડ બતાવો (કારણકે એડ ચાલતી હશે) 🌟
-            setTimeout(() => {
-                showScorecardModal("End of Innings 1");
-            }, 3000);
+            // 🌟 1. Quick Match: ઇનિંગ્સ બ્રેકમાં Ad બતાવો
+            triggerInterstitialAd();
+
+            // 🌟 કોઈ વેઇટિંગ વગર સીધું જ સ્કોરકાર્ડ બતાવો
+            showScorecardModal("End of Innings 1");
         } else {
-            // મેચ પૂરી - ૩ સેકન્ડ પછી ફિનિશ ફંક્શન કોલ કરો
-            stopBallTimer();
-            isAnimating = true;
-            setTimeout(() => {
-                finishMatch();
-            }, 3000);
+            // 🌟 મેચ પૂરી - સીધું ફિનિશ ફંક્શન કોલ કરો
+            finishMatch();
         }
     } else {
-        // 🛠️ FIX: અહીંયા પણ handleTourneyOverTransition() ની જગ્યાએ નીચેનું ફંક્શન આવશે!
         prepareNextBall();
     }
 }
@@ -6762,24 +6834,28 @@ champHistory[currentChampMatchIndex].margin = marginTxt;
 
 
             function checkTourneyMatchStatus() {
-                if (wickets >= 11 || balls >= maxOvers * 6 || (target !== -1 && runs >= target)) {
-                    if (currentInnings === 1) {
-                        scoreInnings1 = runs;
-                        wicketsInnings1 = wickets;
-                        target = runs + 1;
-                        currentInnings = 2;
-                        isUserBatting = !isUserBatting;
+    if (wickets >= 11 || balls >= maxOvers * 6 || (target !== -1 && runs >= target)) {
 
-                        alert(`Innings Break! Target is ${target}`);
-                        initTourneyInnings();
-                    } else {
-                        finishMatch(); // ઓરિજિનલ રિઝલ્ટ સ્ક્રીન પર મોકલો
-                    }
-                } else {
-                    // 🛠️ FIX: અહીંયા પણ handleTourneyOverTransition() ની જગ્યાએ નીચેનું ફંક્શન આવશે!
-                    prepareTourneyNextBall();
-                }
-            }
+        stopBallTimer();
+        isAnimating = true;
+
+        if (currentInnings === 1) {
+            scoreInnings1 = runs;
+            wicketsInnings1 = wickets;
+            target = runs + 1;
+            currentInnings = 2;
+            isUserBatting = !isUserBatting;
+
+            alert(`Innings Break! Target is ${target}`);
+            initTourneyInnings();
+        } else {
+            // મેચ પૂરી - સીધું સમરી અને રિઝલ્ટ બતાવો
+            finishMatch();
+        }
+    } else {
+        prepareTourneyNextBall();
+    }
+}
 
             // ================== Handle tourney transitioan ===================
 
@@ -6787,84 +6863,88 @@ champHistory[currentChampMatchIndex].margin = marginTxt;
                 // REPLACE THIS FUNCTION: handleTourneyOverTransition
             // ----------------------------------------------------
                 function handleTourneyOverTransition() {
-stopBallTimer();
+    stopBallTimer();
 
-if (balls === 0 || (balls > 0 && balls % 6 === 0)) {
-currentBowlerIdx = -1;
-if (balls > 0) { let temp = striker; striker = nonStriker; nonStriker = temp; }
+    if (balls === 0 || (balls > 0 && balls % 6 === 0)) {
+        currentBowlerIdx = -1;
+        if (balls > 0) { let temp = striker; striker = nonStriker; nonStriker = temp; }
 
-// 🌟 🌟 STRATEGIC TIMEOUT LOGIC 🌟 🌟
-if (currentTourneyName === "World Cup 20") {
-// 7મી ઓવર (42 બોલ)
-if (balls === 42 && !timeout1Played) {
-timeout1Played = true;
-showTimeoutOverlay("BOWLING TEAM TIMEOUT");
-return;
-}
-// 14મી ઓવર (84 બોલ)
-else if (balls === 84 && !timeout2Played) {
-timeout2Played = true;
-showTimeoutOverlay("BATTING TEAM TIMEOUT");
-return;
-}
-}
-else if (currentTourneyName === "Champ Cup") {
-// 5મી ઓવર (30 બોલ)
-if (balls === 30 && !timeout1Played) {
-timeout1Played = true;
-showTimeoutOverlay("STRATEGIC TIMEOUT");
-return;
-}
-}
-}
 
-if (currentBowlerIdx === -1) {
-bowlerSelectionPending = true;
+        // 🌟 🌟 STRATEGIC TIMEOUT LOGIC WITH ADS 🌟 🌟
+        if (currentTourneyName === "World Cup 20") {
+            // 7મી ઓવર (42 બોલ)
+            if (balls === 42 && !timeout1Played) {
+                timeout1Played = true;
+                triggerInterstitialAd(); // 🌟 2. World Cup: 7મી ઓવરે Ad
+                showTimeoutOverlay("BOWLING TEAM TIMEOUT");
+                return;
+            }
+            // 15મી ઓવર (90 બોલ)
+            else if (balls === 90 && !timeout2Played) {
+                timeout2Played = true;
+                triggerInterstitialAd(); // 🌟 3. World Cup: 15મી ઓવરે Ad
+                showTimeoutOverlay("BATTING TEAM TIMEOUT");
+                return;
+            }
+        }
+        else if (currentTourneyName === "Champ Cup") {
+            // 5મી ઓવર (30 બોલ)
+            if (balls === 30 && !timeout1Played) {
+                timeout1Played = true;
+                triggerInterstitialAd(); // 🌟 4. Champ Cup: 5મી ઓવરે Ad
+                showTimeoutOverlay("STRATEGIC TIMEOUT");
+                return;
+            }
+        }
+    }
 
-if (gameMode === 'online') {
-if (!isUserBatting) {
-document.getElementById('tm-action-area').style.display = "none";
-document.getElementById('tm-input-controls').style.display = "none";
-document.getElementById('tm-bowler-selection').style.display = "block";
-renderOnlineBowlerSelection();
-logCommentary("Select your next bowler.");
-} else {
-document.getElementById('tm-action-area').style.display = "none";
-document.getElementById('tm-bowler-selection').style.display = "none";
-logCommentary(`Waiting for ${p2Name} to select Bowler...`);
-}
-} else {
-if (!isUserBatting) {
-document.getElementById('tm-action-area').style.display = "none";
-document.getElementById('tm-input-controls').style.display = "none";
-document.getElementById('tm-bowler-selection').style.display = "block";
-renderTourneyBowlerSelection();
-logCommentary("Select your next bowler.");
-} else {
-let validBowlers = [];
-for(let i=0; i<TEAM_SIZE; i++) {
-if (teamAI[i] && teamAI[i].role === "Bowler" && teamAI[i].overs_bowled < limitPerBowler) {
-validBowlers.push(i);
-}
-}
-if (validBowlers.length === 0) validBowlers = [7,8,9,10,11];
+    if (currentBowlerIdx === -1) {
+        bowlerSelectionPending = true;
 
-currentBowlerIdx = validBowlers[Math.floor(Math.random() * validBowlers.length)];
+        if (gameMode === 'online') {
+            if (!isUserBatting) {
+                document.getElementById('tm-action-area').style.display = "none";
+                document.getElementById('tm-input-controls').style.display = "none";
+                document.getElementById('tm-bowler-selection').style.display = "block";
+                renderOnlineBowlerSelection();
+                logCommentary("Select your next bowler.");
+            } else {
+                document.getElementById('tm-action-area').style.display = "none";
+                document.getElementById('tm-bowler-selection').style.display = "none";
+                logCommentary(`Waiting for ${p2Name} to select Bowler...`);
+            }
+        } else {
+            if (!isUserBatting) {
+                document.getElementById('tm-action-area').style.display = "none";
+                document.getElementById('tm-input-controls').style.display = "none";
+                document.getElementById('tm-bowler-selection').style.display = "block";
+                renderTourneyBowlerSelection();
+                logCommentary("Select your next bowler.");
+            } else {
+                let validBowlers = [];
+                for(let i=0; i<TEAM_SIZE; i++) {
+                    if (teamAI[i] && teamAI[i].role === "Bowler" && teamAI[i].overs_bowled < limitPerBowler) {
+                        validBowlers.push(i);
+                    }
+                }
+                if (validBowlers.length === 0) validBowlers = [7,8,9,10,11];
 
-if (teamAI[currentBowlerIdx].overs_bowled === limitPerBowler) {
-highLimitUsed = true;
-}
+                currentBowlerIdx = validBowlers[Math.floor(Math.random() * validBowlers.length)];
 
-teamAI[currentBowlerIdx].overs_bowled++;
-currentBowlerHattrick = 0;
+                if (teamAI[currentBowlerIdx].overs_bowled === limitPerBowler) {
+                    highLimitUsed = true;
+                }
 
-updateTourneyScoreBoard();
-prepareTourneyNextBall();
-}
-}
-} else {
-prepareTourneyNextBall();
-}
+                teamAI[currentBowlerIdx].overs_bowled++;
+                currentBowlerHattrick = 0;
+
+                updateTourneyScoreBoard();
+                prepareTourneyNextBall();
+            }
+        }
+    } else {
+        prepareTourneyNextBall();
+    }
 }
 
             // ================== Prepare next Ball =====================================
@@ -7162,45 +7242,53 @@ executeTestBall(batFinger, bowlFinger);
 
 
 function checkTestMatchStatus() {
-if (wickets >= 10 || (target !== -1 && runs >= target)) {
-handleTestInningsBreak(false);
-} else if (balls > 0 && balls % 6 === 0) {
-document.getElementById('test-action-area').style.display = "none";
-setTimeout(() => { handleTestOverTransition(); }, 1000);
-}
-}
+    if (wickets >= 10 || (target !== -1 && runs >= target)) {
 
-function declareInnings() {
-    let confirmMsg = currentLang === 'gu' ? "શું તમે ખરેખર આ ઇનિંગ DECLARE કરવા માંગો છો?" : "Are you sure you want to DECLARE this innings?";
+        stopBallTimer();
+        isAnimating = true;
 
-    if(confirm(confirmMsg)) {
-        let btnDec = document.getElementById('btn-declare');
+        // 🌟 સીધું જ ઇનિંગ્સ બ્રેક ફંક્શન કોલ કરો
+        handleTestInningsBreak(false);
 
-        // ૧. બટનનું લખાણ બદલીને લોડિંગ બતાવો અને ડબલ ક્લિક અટકાવો
-        if (btnDec) {
-            btnDec.disabled = true;
-            btnDec.style.opacity = "0.7";
-            btnDec.innerText = "Processing... ⏳";
-        }
-
-        // ૨. એડ બતાવો (અસલી કે નકલી)
-        triggerMasterAd();
-
-        // ૩. એડ આવે કે ના આવે, બરાબર 3 સેકન્ડ પછી ગેમ આગળ વધશે અને ડિક્લેર થઈ જશે
-        setTimeout(() => {
-            if (btnDec) {
-                btnDec.disabled = false;
-                btnDec.style.opacity = "1";
-                btnDec.innerText = "📢 DECLARE INNINGS";
-                btnDec.style.display = "none"; // ડિક્લેર થઈ ગયા પછી બટન છુપાવી દો
-            }
-
-            // અસલી ડિક્લેરેશનનું ફંક્શન કોલ કરો
-            handleTestInningsBreak(true);
-
-        }, 3000); // 3000 ms = 3 સેકન્ડ (એડ પતવાનો ટાઈમ)
+    } else if (balls > 0 && balls % 6 === 0) {
+        // ઓવર પૂરી થઈ
+        document.getElementById('test-action-area').style.display = "none";
+        handleTestOverTransition();
     }
 }
+
+// function declareInnings() {
+//     let confirmMsg = currentLang === 'gu' ? "શું તમે ખરેખર આ ઇનિંગ DECLARE કરવા માંગો છો?" : "Are you sure you want to DECLARE this innings?";
+
+//     if(confirm(confirmMsg)) {
+//         triggerInterstitialAd();
+//         let btnDec = document.getElementById('btn-declare');
+
+//         // ૧. બટનનું લખાણ બદલીને લોડિંગ બતાવો અને ડબલ ક્લિક અટકાવો
+//         if (btnDec) {
+//             btnDec.disabled = true;
+//             btnDec.style.opacity = "0.7";
+//             btnDec.innerText = "Processing... ⏳";
+//         }
+
+//         // ૨. એડ બતાવો (અસલી કે નકલી)
+//         triggerMasterAd();
+
+//         // ૩. એડ આવે કે ના આવે, બરાબર 3 સેકન્ડ પછી ગેમ આગળ વધશે અને ડિક્લેર થઈ જશે
+//         setTimeout(() => {
+//             if (btnDec) {
+//                 btnDec.disabled = false;
+//                 btnDec.style.opacity = "1";
+//                 btnDec.innerText = "📢 DECLARE INNINGS";
+//                 btnDec.style.display = "none"; // ડિક્લેર થઈ ગયા પછી બટન છુપાવી દો
+//             }
+
+//             // અસલી ડિક્લેરેશનનું ફંક્શન કોલ કરો
+//             handleTestInningsBreak(true);
+
+//         }, 3000); // 3000 ms = 3 સેકન્ડ (એડ પતવાનો ટાઈમ)
+//     }
+// }
 
 
         // =================== Test Bowler Selection ==================
@@ -7295,19 +7383,31 @@ openTestScorecard(true, title);
 }
 
 function handleTestInningsBreak(isDeclared) {
-innScores[testInningsCount - 1] = runs;
-innWickets[testInningsCount - 1] = wickets;
+    innScores[testInningsCount - 1] = runs;
+    innWickets[testInningsCount - 1] = wickets;
 
-let decTxt = isDeclared ? "DECLARED" : "ALL OUT";
-let title = `INNINGS ${testInningsCount} ${decTxt}`;
+    let decTxt = isDeclared ? "DECLARED" : "ALL OUT";
+    let title = `INNINGS ${testInningsCount} ${decTxt}`;
 
-// 🌟 🌟 CALL ADMOB AD BEFORE SHOWING SCORECARD 🌟 🌟
-if(typeof Android !== "undefined") {
-Android.showTimeoutAd();
+    triggerInterstitialAd(); // 🌟 6. Test Match: All Out કે Declare થાય ત્યારે Ad
+
+    // સ્કોરકાર્ડ બતાવો, પછી જ ઇનિંગ બદલશે
+    openTestScorecard(true, title, true);
 }
 
-// સ્કોરકાર્ડ બતાવો, પછી જ ઇનિંગ બદલશે
-openTestScorecard(true, title, true);
+function declareInnings() {
+    let confirmMsg = currentLang === 'gu' ? "શું તમે ખરેખર આ ઇનિંગ DECLARE કરવા માંગો છો?" : "Are you sure you want to DECLARE this innings?";
+
+    if(confirm(confirmMsg)) {
+        let btnDec = document.getElementById('btn-declare');
+
+        if (btnDec) {
+            btnDec.style.display = "none"; // ડિક્લેર થઈ ગયા પછી બટન છુપાવી દો
+        }
+
+        // અસલી ડિક્લેરેશનનું ફંક્શન કોલ કરો (જેની અંદર Ad મૂકેલી છે)
+        handleTestInningsBreak(true);
+    }
 }
 
 // આ એક નવું ફંક્શન છે જે સ્કોરકાર્ડ બંધ કર્યા પછી લોજિક ચલાવશે
@@ -8906,67 +9006,63 @@ btnNext.style.color = "#000";
                                 // ASYNC
                             // ==========================================
 
-                            async function loadFromDrive() {
-                                    try {
-                                        const response = await fetch(webAppUrl + "?userName=" + encodeURIComponent(userName));
-                                        const text = await response.text();
+                            // 1. Load Data from Firebase
+async function loadFromFirebase() {
+    try {
+        // 'users' કલેક્શનમાંથી આ યુઝરનો ડેટા લાવો
+        const docRef = db.collection("users").doc(userName.toLowerCase());
+        const docSnap = await docRef.get();
 
-                                        if (!text || text.trim() === "" || text === "null") return null;
-
-                                        return JSON.parse(text);
-                                    } catch (err) {
-                                        console.error("Drive load error:", err);
-                                        return null;
-                                    }
-                                }
-
-                                async function saveToDrive(gameData) {
-try {
-// 🌟 FIX: સર્વર પર સેવ કરતા પહેલા લેટેસ્ટ લીડરબોર્ડ મંગાવો 🌟
-// જેથી તમે જ્યારે સેવ કરો ત્યારે બીજા પ્લેયર્સના વધેલા પોઈન્ટ્સ ઉડી ના જાય!
-try {
-const lbRes = await fetch(webAppUrl + "?action=getLeaderboard");
-const lbText = await lbRes.text();
-const serverLB = JSON.parse(lbText);
-
-let myLocalData = globalLeaderboard.find(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
-
-if (serverLB && serverLB.length > 0 && myLocalData) {
-let myServerIdx = serverLB.findIndex(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
-if (myServerIdx !== -1) {
-// સર્વરના ડેટામાં ફક્ત તમારો જ ડેટા અપડેટ કરો, બાકીના પ્લેયર્સ એમ જ રહેશે
-serverLB[myServerIdx] = myLocalData;
-} else {
-serverLB.push(myLocalData);
-}
-globalLeaderboard = serverLB; // હવે તમારી પાસે રિયલ ટાઈમ ગ્લોબલ ડેટા છે!
-localStorage.setItem("cricpro_global_leaderboard", JSON.stringify(globalLeaderboard));
-}
-} catch(e) {
-console.log("Silent LB sync failed, pushing local data.");
+        if (docSnap.exists) {
+            return docSnap.data().gameData; // તારો સેવ કરેલો ડેટા
+        } else {
+            return null; // નવો યુઝર છે
+        }
+    } catch (err) {
+        console.error("Firebase load error:", err);
+        return null;
+    }
 }
 
-const payload = {
-action: "saveGame",
-userName: userName,
-password: userPassword,
-globalLeaderboard: globalLeaderboard, // હવે આ લેટેસ્ટ છે!
-gameData: gameData
-};
+// 2. Save Data & Sync Leaderboard to Firebase
+async function saveToFirebase(gameData) {
+    try {
+        // A. યુઝરનો પર્સનલ ગેમ ડેટા સેવ કરો
+        await db.collection("users").doc(userName.toLowerCase()).set({
+            gameData: gameData,
+            password: userPassword,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
 
-await fetch(webAppUrl, {
-method: 'POST',
-headers: {
-'Content-Type': 'text/plain;charset=utf-8',
-},
-body: JSON.stringify(payload)
-});
-console.log("Cloud Sync Request Sent Successfully!");
-} catch (err) {
-console.error("Drive save error:", err);
-}
-}
+        // B. ગ્લોબલ લીડરબોર્ડ અપડેટ કરો 
+        const lbRef = db.collection("system").doc("leaderboard");
+        const lbSnap = await lbRef.get();
+        let serverLB = lbSnap.exists ? lbSnap.data().list : [];
 
+        let myLocalData = globalLeaderboard.find(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
+
+        if (myLocalData) {
+            let myServerIdx = serverLB.findIndex(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
+            if (myServerIdx !== -1) {
+                // જો સર્વર પર ડેટા હોય તો ફક્ત પોતાનો ડેટા અપડેટ કરો
+                serverLB[myServerIdx] = myLocalData;
+            } else {
+                serverLB.push(myLocalData);
+            }
+            
+            // Firebase પર લેટેસ્ટ લીડરબોર્ડ સેવ કરો
+            await lbRef.set({ list: serverLB });
+            
+            // લોકલ મેમરી અપડેટ કરો
+            globalLeaderboard = serverLB;
+            localStorage.setItem("cricpro_global_leaderboard", JSON.stringify(globalLeaderboard));
+        }
+
+        console.log("🔥 Firebase Cloud Sync Success!");
+    } catch (err) {
+        console.error("Firebase save error:", err);
+    }
+}
                                 async function openRanking() {
 showScreen('screen-ranking');
 let tbody = document.getElementById('ranking-tbody');
@@ -9151,6 +9247,7 @@ renderRankingTable('world');
                                             // ૯. સ્ક્રીન નેવિગેશન: હિસ્ટ્રી ક્લિયર કરી મેઈન મેનુ પર જાવ
                                             screenHistory = [];
                                             showScreen('screen-mode');
+                                            initRealTimeChat();
 
                                         } catch (e) {
                                             // ERROR HANDLING (જો કાઈ જ કામ ના કરે તો પણ ઓફલાઈન ગેમ તો ચાલુ થવી જ જોઈએ!)
@@ -9202,33 +9299,69 @@ renderRankingTable('world');
                                             showScreen('screen-handscup-hub');
                                         }
 
-                                                                                                                async function sendChatMessage() {
-                                            let input = document.getElementById('chat-input');
-                                            let msg = input.value.trim();
+                                                                                                                // ચેટ મોકલવા માટે
+// ચેટ મોકલવા માટે
+async function sendChatMessage() {
+    let input = document.getElementById('chat-input');
+    let msg = input.value.trim();
 
-                                            // જો મેસેજ ખાલી હોય તો કઈ ના કરો
-                                            if (msg === "") return;
+    if (msg === "") return;
+    input.value = ""; // ઇનપુટ ક્લિયર કરો
 
-                                            // ઇનપુટ બોક્સ ખાલી કરી દો
-                                            input.value = "";
+    try {
+        // 🌟 FIX: db ની જગ્યાએ firestoreDb વાપર્યું છે 🌟
+        await firestoreDb.collection("chatMessages").add({
+            user: userName,
+            text: msg,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+        });
+    } catch (e) {
+        console.error("Chat Error:", e);
+    }
+}
 
-                                            try {
-                                                // સર્વર પર ડેટા મોકલો
-                                                await fetch(webAppUrl, {
-                                                    method: 'POST',
-                                                    body: JSON.stringify({
-                                                        action: "sendMessage",
-                                                        userName: userName,
-                                                        message: msg
-                                                    })
-                                                });
+// 🌟 REAL-TIME CHAT LISTENER 🌟
+function initRealTimeChat() {
+    let chatBox = document.getElementById('chat-box');
+    if(!chatBox) return;
 
-                                                // મેસેજ મોકલ્યા પછી તરત ચેટ રિફ્રેશ કરો
-                                                loadChat();
-                                            } catch (e) {
-                                                console.error("Chat Error:", e);
-                                            }
-                                        }
+    chatBox.innerHTML = "<p style='color:#64748b; text-align:center;'>Connecting to Global Chat...</p>";
+
+    // 🌟 FIX: db ની જગ્યાએ firestoreDb વાપર્યું છે 🌟
+    firestoreDb.collection("chatMessages")
+      .orderBy("timestamp", "asc")
+      .limit(50)
+      .onSnapshot((snapshot) => {
+          chatBox.innerHTML = "";
+          
+          if(snapshot.empty) {
+              chatBox.innerHTML = "<p style='color:#64748b; text-align:center;'>No messages yet. Start the conversation!</p>";
+              return;
+          }
+
+          snapshot.forEach(doc => {
+              let m = doc.data();
+              let color = (m.user === userName) ? "#d4af37" : "#00e5ff";
+              
+              // 🌟 FIX: ટાઈમ બતાવવા માટે સેફ્ટી ચેક 🌟
+              let timeStr = "";
+              if(m.timestamp) {
+                  timeStr = new Date(m.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              }
+
+              chatBox.innerHTML += `<div style="margin-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+                  <strong style="color:${color}">${m.user}:</strong>
+                  <span style="color:#fff">${m.text}</span>
+                  <small style="color:#64748b; font-size:9px; float:right;">${timeStr}</small>
+              </div>`;
+          });
+          
+          // ઓટો-સ્ક્રોલ
+          chatBox.scrollTop = chatBox.scrollHeight;
+      }, (error) => {
+          console.log("Chat Listener Error: ", error);
+      });
+}
 
                                         // ૨. ચેટ બોક્સમાં મેસેજ લોડ કરવા માટે
                                         async function loadChat() {
@@ -9259,48 +9392,35 @@ renderRankingTable('world');
                                                 console.error("Load Chat Error:", e);
                                             }
                                         }
-
-                                        // ૩. દર ૪ સેકન્ડે ચેટને ઓટોમેટિક રિફ્રેશ કરો
-                                        setInterval(() => {
-                                            // જો યુઝર મેઈન મેનુ (screen-mode) પર હોય તો જ ચેટ લોડ કરો
-                                            if (userName && document.getElementById('screen-mode').classList.contains('active')) {
-                                                loadChat();
-                                            }
-                                        }, 4000);
                                         // 🌟 3. ઓટો-રિફ્રેશ લીડરબોર્ડ (Real Time Sync) 🌟
-setInterval(async () => {
-// જો યુઝર રેન્કિંગ સ્ક્રીન પર હોય, તો જ ઓટો-રિફ્રેશ કરો (જેથી ગેમ ચોંટે નહિ)
-let rankingScreen = document.getElementById('screen-ranking');
-if (rankingScreen && rankingScreen.classList.contains('active')) {
-try {
-const controllerLB = new AbortController();
-setTimeout(() => controllerLB.abort(), 3000);
+// 🌟 REAL-TIME LEADERBOARD LISTENER 🌟
+function initRealTimeLeaderboard() {
+    db.collection("system").doc("leaderboard")
+      .onSnapshot((docSnap) => {
+          if (docSnap.exists) {
+              let data = docSnap.data().list;
+              if (data && data.length > 0) {
+                  globalLeaderboard = data;
+                  localStorage.setItem("cricpro_global_leaderboard", JSON.stringify(globalLeaderboard));
 
-let res = await fetch(webAppUrl + "?action=getLeaderboard", { signal: controllerLB.signal });
-let data = await res.json();
+                  // તારા પોતાના પોઈન્ટ્સ મેમરીમાં રીફ્રેશ કરો
+                  let me = globalLeaderboard.find(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
+                  if (me && me.world) {
+                      userWorldPts = me.world.pts;
+                  }
 
-if(data && data.length > 0) {
-// સર્વર પરથી નવો ડેટા મેમરીમાં લો
-globalLeaderboard = data;
-localStorage.setItem("cricpro_global_leaderboard", JSON.stringify(globalLeaderboard));
-
-// તારા પોતાના પોઈન્ટ્સ પણ અપડેટ કરી લે (HANDS Cup અનલૉક કરવા)
-let me = globalLeaderboard.find(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
-if (me && me.world) {
-userWorldPts = me.world.pts;
+                  // જો યુઝર રેન્કિંગ સ્ક્રીન પર હોય, તો જ UI રીફ્રેશ કરો
+                  let rankingScreen = document.getElementById('screen-ranking');
+                  if (rankingScreen && rankingScreen.classList.contains('active')) {
+                      let currentTab = document.getElementById('tab-world').classList.contains('rank-tab-active') ? 'world' : 'tourney';
+                      renderRankingTable(currentTab);
+                  }
+              }
+          }
+      }, (error) => {
+          console.log("Leaderboard Auto-sync offline or failed.", error);
+      });
 }
-
-// UI જાતે જ રીફ્રેશ કરો
-let currentTab = document.getElementById('tab-world').classList.contains('rank-tab-active') ? 'world' : 'tourney';
-renderRankingTable(currentTab);
-}
-} catch(e) {
-// જો નેટવર્ક ધીમું હોય તો શાંતિથી સ્કીપ કરી દેશે
-console.log("Leaderboard Auto-sync skipped.");
-}
-}
-}, 10000); // દર 10 સેકન્ડે લીડરબોર્ડ ઓટોમેટિક અપડેટ થશે
-
 
 function openSettings() {
 // ૧. ડ્રોપડાઉનમાં અત્યારે જે ભાષા છે એ સેટ કરો
@@ -9419,100 +9539,195 @@ showScreen('screen-settings');
 
                                 // 🛠️ BUG FIX: આખી ગેમ માટે હવે આ એક જ Master finishMatch રહેશે.
                                         function finishMatch() {
-                                            isMatchOngoing = false;
-                                            stopBallTimer();
+    isTestMatch = false;
+    isMatchOngoing = false;
+    stopBallTimer();
 
-                                            let p1BatScore = userBatFirst ? scoreInnings1 : runs;
-                                            let p2BatScore = userBatFirst ? runs : scoreInnings1;
-                                            let p1BatWickets = userBatFirst ? wicketsInnings1 : wickets;
-                                            let p2BatWickets = userBatFirst ? wickets : wicketsInnings1;
+    let t1Total = innScores[0] + (innScores[2] || 0);
+    let t2Total = innScores[1] + (innScores[3] || 0);
 
-                                            let p1Won = p1BatScore > p2BatScore;
-                                            let p2Won = p2BatScore > p1BatScore;
-                                            let isTie = p1BatScore === p2BatScore;
+    let p1NameDisp = userBatFirst ? userName : p2Name;
+    let p2NameDisp = userBatFirst ? p2Name : userName;
 
-                                            // જો ટુર્નામેન્ટ મેચ હોય તો તેને અલગ રીતે હેન્ડલ કરો
-                                            if (isTournamentMatch) {
-                                                // --- SUPER OVER LOGIC FOR TOURNAMENTS ---
-                                                if (isTie) {
-                                                    document.getElementById('scorecard-modal').style.display = 'none';
-                                                    let sfxSo = document.getElementById('sfx-superover');
-                                                    if(sfxSo) playSFX(sfxSo);
+    let resultText = "";
+    let titleColor = "#fff";
 
-                                                    alert("🚨 MATCH TIED! SUPER OVER INITIATED! 🚨");
+    // વિનર ચેક કરવાનું લોજિક
+    let p1Won = false;
+    let p2Won = false;
+    let isTie = false;
 
-                                                    maxOvers = 1; limitPerBowler = 1; maxLimitForOne = 1;
-                                                    runs = 0; wickets = 0; balls = 0; target = -1;
-                                                    scoreInnings1 = 0; wicketsInnings1 = 0;
-                                                    currentInnings = 1;
-                                                    striker = 0; nonStriker = 1; currentBowlerIdx = -1;
+    // === WTC SERIES UPDATE LOGIC ===
+    if (currentTourneyName === "WTC" && currentWtcSeriesData) {
+        currentWtcSeriesData.matchesPlayed++;
 
-                                                    isUserBatting = true; userBatFirst = true;
+        let myWtcTeam = wtcTeams.find(t => t.isUser);
+        let oppWtcTeam = wtcTeams.find(t => t.name === currentWtcSeriesData.opponent);
 
-                                                    resetMatchStats(teamUser); resetMatchStats(teamAI);
-                                                    updateTourneyScoreBoard();
-                                                    showScreen('screen-tourney-match');
-                                                    document.getElementById('tm-commentary').innerHTML = `<strong style="color:#f43f5e">SUPER OVER! 6 Balls to decide the winner!</strong>`;
+        myWtcTeam.m++; oppWtcTeam.m++;
 
-                                                    if (currentBowlerIdx === -1) handleTourneyOverTransition();
-                                                    else prepareTourneyNextBall();
+        // Calculate Test Match Win/Loss/Draw for WTC
+        if (testInningsCount === 3 && t2Total > t1Total) {
+            // Innings defeat
+            if (userBatFirst) { p2Won = true; currentWtcSeriesData.oppWins++; oppWtcTeam.w++; oppWtcTeam.pts += 12; myWtcTeam.l++; }
+            else { p1Won = true; currentWtcSeriesData.userWins++; myWtcTeam.w++; myWtcTeam.pts += 12; oppWtcTeam.l++; }
+        } else if (target !== -1 && runs >= target) {
+            // Chased successfully
+            if (isUserBatting) { p1Won = true; currentWtcSeriesData.userWins++; myWtcTeam.w++; myWtcTeam.pts += 12; oppWtcTeam.l++; }
+            else { p2Won = true; currentWtcSeriesData.oppWins++; oppWtcTeam.w++; oppWtcTeam.pts += 12; myWtcTeam.l++; }
+        } else if (testInningsCount >= 4 && wickets >= 10 && runs < target) {
+            // Defended successfully
+            if (!isUserBatting) { p1Won = true; currentWtcSeriesData.userWins++; myWtcTeam.w++; myWtcTeam.pts += 12; oppWtcTeam.l++; }
+            else { p2Won = true; currentWtcSeriesData.oppWins++; oppWtcTeam.w++; oppWtcTeam.pts += 12; myWtcTeam.l++; }
+        } else {
+            // Draw
+            isTie = true; // For display purpose
+            currentWtcSeriesData.draws++;
+            myWtcTeam.d++; oppWtcTeam.d++;
 
-                                                    return; // સુપર ઓવર માટે અહીથી જ પાછા ફરી જાવ
-                                                }
+            // --- 🌟 NEW: TRACK SERIES PLAYER STATS 🌟 ---
+            [...teamUser, ...teamAI].forEach(p => {
+                let existing = wtcSeriesStats.find(s => s.name === p.name);
+                if (!existing) {
+                    wtcSeriesStats.push({ name: p.name, runs: p.runs_scored, wkts: p.wickets_taken });
+                } else {
+                    existing.runs += p.runs_scored;
+                    existing.wkts += p.wickets_taken;
+                }
+                let isUsr = teamUser.some(u => u.id === p.id);
+                updateWTCGlobalPlayerStats(p, isUsr ? wtcMyTeamName : currentWtcSeriesData.opponent);
+            });
 
-                                                // જો સુપર ઓવર ન હોય તો નોર્મલ રિઝલ્ટ પ્રોસેસ કરો
-                                                let mMatch = currentTourneyName === "Champ Cup" ? champSchedule[currentChampMatchIndex] : wcSchedule[currentWcMatchIndex];
-                                                let t1BallsActual = (userBatFirst ? teamUser : teamAI).reduce((s, p) => s + (p.balls_faced || 0), 0);
-                                                let t2BallsActual = (userBatFirst ? teamAI : teamUser).reduce((s, p) => s + (p.balls_faced || 0), 0);
+            myWtcTeam.pts += 4; oppWtcTeam.pts += 4;
+        }
 
-                                                if (currentTourneyName === "Champ Cup") {
-                                                    updateChampStats(mMatch.t1.isUser ? mMatch.t1 : mMatch.t2, p1BatScore, t1BallsActual, p2BatScore, t2BallsActual, p1Won);
-                                                    updateChampStats(mMatch.t1.isUser ? mMatch.t2 : mMatch.t1, p2BatScore, t2BallsActual, p1BatScore, t1BallsActual, p2Won);
-                                                    champHistory[currentChampMatchIndex].winner = p1Won ? (mMatch.t1.isUser ? mMatch.t1.name : mMatch.t2.name) : (mMatch.t1.isUser ? mMatch.t2.name : mMatch.t1.name);
-                                                    currentChampMatchIndex++;
-                                                    renderChampDashboard();
-                                                    savedChampMatch = null;
-                                                } else {
-                                                    updateWCTeamStats(mMatch.t1, p1BatScore, t1BallsActual, p2BatScore, t2BallsActual, p1Won, false);
-                                                    updateWCTeamStats(mMatch.t2, p2BatScore, t2BallsActual, p1BatScore, t1BallsActual, p2Won, false);
-                                                    wcHistory[currentWcMatchIndex].winner = p1Won ? (mMatch.t1.isUser ? mMatch.t1.name : mMatch.t2.name) : (mMatch.t1.isUser ? mMatch.t2.name : mMatch.t1.name);
-                                                    currentWcMatchIndex++;
-                                                    renderWCDashboard();
-                                                    savedWCMatch = null;
-                                                }
+        // Check if series is over
+        if (currentWtcSeriesData.matchesPlayed >= currentWtcSeriesData.totalMatches) {
+            currentWtcSeriesData.status = "Finished";
+            currentWtcTourIndex++;
+            if (currentWtcTourIndex >= 10) {
+                // WTC League Finished - Trigger Final
+                alert("WTC LEAGUE STAGE FINISHED! Top 2 teams will now be calculated.");
+            }
+        }
+    }
+    // === END WTC UPDATE ===
 
-                                                // પ્લેયર્સના ટૂર્નામેન્ટ સ્ટેટ્સ અપડેટ કરો
-                                                let userTeamNameStr = currentTourneyName === "Champ Cup" ? champUserTeamName : wcUserTeamName;
-                                                teamUser.forEach(p => updatePlayerTourneyStats(p.name, userTeamNameStr, true, p.runs_scored, p.wickets_taken, p.sixes || 0, p.runs_given));
-                                                teamAI.forEach(p => updatePlayerTourneyStats(p.name, p2Name, false, p.runs_scored, p.wickets_taken, p.sixes || 0, p.runs_given));
+    if (testInningsCount === 3 && t2Total > t1Total) {
+        resultText = `${p2NameDisp} WON BY AN INNINGS & ${t2Total - t1Total} RUNS!`;
+        titleColor = userBatFirst ? "#f43f5e" : "#d4af37";
+        if (userBatFirst) p2Won = true; else p1Won = true;
+    } else if (target !== -1 && runs >= target) {
+        resultText = `${isUserBatting ? userName : p2Name} WON BY ${10 - wickets} WICKETS!`;
+        titleColor = isUserBatting ? "#d4af37" : "#f43f5e";
+        if (isUserBatting) p1Won = true; else p2Won = true;
+    } else if (testInningsCount >= 4 && wickets >= 10 && runs < target) {
+        let winRun = target - runs - 1;
+        resultText = `${!isUserBatting ? userName : p2Name} WON BY ${winRun} RUNS!`;
+        titleColor = !isUserBatting ? "#d4af37" : "#f43f5e";
+        if (!isUserBatting) p1Won = true; else p2Won = true;
+    } else {
+        resultText = "MATCH DRAWN!";
+        isTie = true;
+    }
 
-                                                showFinalSummary(p1BatScore, p1BatWickets, p2BatScore, p2BatWickets);
+    // 4 ઇનિંગ્સ નું HTML
+    let summaryHtml = `
+        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; border: 1px solid #d4af37; margin-bottom: 20px;">
+            <h3 style="color:#d4af37; margin-top:0; font-size:14px; text-transform:uppercase;">Test Match Summary</h3>
 
-                                                // --- 🏆 લીડરબોર્ડ અપડેટ (Both Players - Tournament) 🏆 ---
-                                                let myBalls = teamUser && teamUser.length > 0 ? teamUser.reduce((s,p)=>s+(p.balls_faced||0),0) : (userBatFirst ? balls : 0);
-                                                let oppBalls = teamAI && teamAI.length > 0 ? teamAI.reduce((s,p)=>s+(p.balls_faced||0),0) : (!userBatFirst ? balls : 0);
-                                                updatePlayerGlobalStats(userName, true, p1Won, isTie, p2Won, p1BatScore, myBalls, p2BatScore, oppBalls);
-                                                updatePlayerGlobalStats(p2Name, true, p2Won, isTie, p1Won, p2BatScore, oppBalls, p1BatScore, myBalls);
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:5px;">
+                <span style="color:#38bdf8; font-weight:bold;">${p1NameDisp} (1st Inn)</span>
+                <span style="color:#fff; font-weight:bold;">${innScores[0] || 0}/${innWickets[0] || 0}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:5px;">
+                <span style="color:#f43f5e; font-weight:bold;">${p2NameDisp} (1st Inn)</span>
+                <span style="color:#fff; font-weight:bold;">${innScores[1] || 0}/${innWickets[1] || 0}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:5px;">
+                <span style="color:#38bdf8; font-weight:bold;">${p1NameDisp} (2nd Inn)</span>
+                <span style="color:#fff; font-weight:bold;">${innScores[2] !== undefined ? innScores[2]+"/"+innWickets[2] : "DNB"}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                <span style="color:#f43f5e; font-weight:bold;">${p2NameDisp} (2nd Inn)</span>
+                <span style="color:#fff; font-weight:bold;">${innScores[3] !== undefined ? innScores[3]+"/"+innWickets[3] : "DNB"}</span>
+            </div>
 
-                                                saveGameData();
-                                            } else {
-                                                // નોર્મલ ક્વિક મેચ
+            <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color:${titleColor}; font-size:13px; font-weight:bold; padding:10px; border-radius:8px; border: 1px dashed ${titleColor};">
+                ${resultText}
+            </div>
+        </div>
+    `;
 
-                                                if(typeof Android !== "undefined") {
-                                                    Android.showTimeoutAd();
-                                                }
-                                                showFinalSummary(p1BatScore, p1BatWickets, p2BatScore, p2BatWickets);
-                                                savedQuickMatch = null;
+    // 🌟 બુલેટપ્રૂફ POTM (Test Match) 🌟
+    let mom = { name: "No Player Data", avatar: "https://ui-avatars.com/api/?name=NP", runs_scored: 0, wickets_taken: 0 };
+    let momScore = -1;
+    let momTeam = userName;
 
-                                                // --- 🏆 લીડરબોર્ડ અપડેટ (Both Players - Quick Match) 🏆 ---
-                                                let myBalls = teamUser && teamUser.length > 0 ? teamUser.reduce((s,p)=>s+(p.balls_faced||0),0) : (userBatFirst ? balls : 0);
-                                                let oppBalls = teamAI && teamAI.length > 0 ? teamAI.reduce((s,p)=>s+(p.balls_faced||0),0) : (!userBatFirst ? balls : 0);
-                                                updatePlayerGlobalStats(userName, false, p1Won, isTie, p2Won, p1BatScore, myBalls, p2BatScore, oppBalls);
-                                                updatePlayerGlobalStats(p2Name, false, p2Won, isTie, p1Won, p2BatScore, oppBalls, p1BatScore, myBalls);
+    if (teamUser && teamUser.length > 0) {
+        teamUser.forEach(p => {
+            if(p) {
+                let s = ((p.runs_scored || 0) * 2) + ((p.wickets_taken || 0) * 60);
+                if(s > momScore) { momScore = s; mom = p; momTeam = userName; }
+            }
+        });
+    }
+    if (teamAI && teamAI.length > 0) {
+        teamAI.forEach(p => {
+            if(p) {
+                let s = ((p.runs_scored || 0) * 2) + ((p.wickets_taken || 0) * 60);
+                if(s > momScore) { momScore = s; mom = p; momTeam = p2Name; }
+            }
+        });
+    }
 
-                                                saveGameData();
-                                            }
-                                        }
+    document.getElementById('mom-details').innerHTML = `<h3 style="color:#d4af37; margin-top:0;">🌟 PLAYER OF THE MATCH 🌟</h3>
+        <img src="${mom.avatar}" style="width:50px; height:50px; border-radius:50%; border:2px solid #d4af37; margin-bottom:10px;">
+        <p style="font-size: 16px; font-weight: 600; margin: 0 0 5px 0;">${mom.name} <span style="font-size:11px; color:#94a3b8; font-weight:normal;">(${momTeam})</span></p>
+        <p style="margin:0; font-size:12px; color:#00e5ff;">Match: ${mom.runs_scored || 0} Runs &nbsp;|&nbsp; ${mom.wickets_taken || 0} Wickets</p>`;
+
+    document.getElementById('detailed-match-summary').innerHTML = summaryHtml;
+    document.getElementById('final-result-title').innerHTML = `TEST SERIES`;
+
+    let earnedCoins = p1Won ? 2000 : (isTie ? 500 : 100);
+    let earnedXP = p1Won ? 500 : (isTie ? 250 : 50);
+
+    document.getElementById('detailed-match-summary').innerHTML += `
+        <div style="font-size:13px; color:#94a3b8; text-align:center; display:flex; justify-content:center; gap:20px; margin-top:10px;">
+            <span style="color:#ffd700; font-weight:bold; font-size:16px;">🪙 +${earnedCoins}</span>
+            <span style="color:#10b981; font-weight:bold; font-size:16px;">🌟 +${earnedXP} XP</span>
+        </div>
+    `;
+
+    userCoins += earnedCoins;
+    userPoints += earnedXP;
+    updateCurrencyUI();
+    if(p1Won) playSFX(audioWin);
+
+    checkManagerLevelUp();
+    if(teamUser && teamUser.length > 0) updateCareerStats(teamUser);
+    if(teamAI && teamAI.length > 0) updateCareerStats(teamAI);
+
+    let myBalls = teamUser && teamUser.length > 0 ? teamUser.reduce((s,p)=>s+(p.balls_faced||0),0) : (userBatFirst ? balls : 0);
+    let oppBalls = teamAI && teamAI.length > 0 ? teamAI.reduce((s,p)=>s+(p.balls_faced||0),0) : (!userBatFirst ? balls : 0);
+    let myTotalRuns = userBatFirst ? (innScores[0] + (innScores[2]||0)) : (innScores[1] + (innScores[3]||0));
+    let oppTotalRuns = userBatFirst ? (innScores[1] + (innScores[3]||0)) : (innScores[0] + (innScores[2]||0));
+
+    updatePlayerGlobalStats(userName, isTournamentMatch, p1Won, isTie, p2Won, myTotalRuns, myBalls, oppTotalRuns, oppBalls);
+    updatePlayerGlobalStats(p2Name, isTournamentMatch, p2Won, isTie, p1Won, oppTotalRuns, oppBalls, myTotalRuns, myBalls);
+
+    if (currentTourneyName === "WTC") {
+        savedWtcMatch = null;
+    } else {
+        savedTestMatch = null;
+    }
+
+    saveGameData();
+
+    triggerInterstitialAd(); // 🌟 8. Test / WTC Match પૂરી થાય ત્યારે Ad
+
+    showScreen('screen-result');
+}
 
                                 // =========  Final Summry ===================
 
@@ -9867,24 +10082,29 @@ userWorldPts = globalLeaderboard[idx].world.pts;
                                     // ==========================================
 
                                         function switchUser() {
-                                            // યુઝરને એક વાર કન્ફર્મ પૂછો કે ખરેખર બહાર જવું છે?
-                                            if(confirm("શું તમે ખરેખર મેનેજરનું નામ બદલવા / બહાર જવા માંગો છો?")) {
+    if(confirm("શું તમે ખરેખર મેનેજરનું નામ બદલવા / બહાર જવા (Log Out) માંગો છો?")) {
+        
+        if (userName) saveGameData(); // જતાં પહેલા સેવ કરો
 
-                                                // ૧. જતાં પહેલા હાલના યુઝરનો ડેટા સેવ કરી લો (જેથી કઈ લોસ ના થાય)
-                                                if (userName) saveGameData();
+        // Firebase માંથી સાઈન-આઉટ કરો
+        firebase.auth().signOut().then(() => {
+            console.log("User signed out.");
+            
+            userName = "";
+            document.getElementById('currency-bar').style.display = 'none';
+            
+            // લોગીન બટન પાછું બતાવો
+            document.getElementById('google-signin-btn').style.display = 'flex';
+            document.getElementById('login-loading-indicator').style.display = 'none';
 
-                                                // ૨. મેમરીમાંથી યુઝરનું નામ ખાલી કરો
-                                                userName = "";
-                                                document.getElementById('username').value = "";
-
-                                                // ૩. ઉપરનો Coins/Diamonds વાળો બાર છુપાવી દો (કારણ કે હવે કોઈ લોગીન નથી)
-                                                document.getElementById('currency-bar').style.display = 'none';
-
-                                                // ૪. હિસ્ટ્રી ખાલી કરો અને સીધા લોગીન (નામ નાખવાની) સ્ક્રીન પર મોકલો
-                                                screenHistory = [];
-                                                showScreen('screen-login');
-                                            }
-                                        }
+            screenHistory = [];
+            showScreen('screen-login');
+        }).catch((error) => {
+            console.error("Sign Out Error", error);
+            alert("લોગઆઉટ થવામાં ભૂલ આવી!");
+        });
+    }
+}
 
                                 // ============== Player Limits =================================
 
@@ -10755,357 +10975,7 @@ let isHplModalOpen = false;
 const TOTAL_PURSE = 750000000; // 75 Cr
 
 // ૧. ડેટાબેઝ લોડ કરો (તારા CSV ના આધારે)
-function generateHPLDatabase() {
 
-// 👇 અહી નીચે બેકટિક્સ (``) ની વચ્ચે તારી એક્સેલ/CSV ફાઈલનો બધો ડેટા કોપી-પેસ્ટ કરી દે! 👇
-const rawCSVData = `
-Virat Kohli,Bat,Indian,2 Cr
-Rohit Sharma,Bat,Indian,2 Cr
-Jasprit Bumrah,Ball,Indian,2 Cr
-Hardik Pandya,Bat,Indian,2 Cr
-Suryakumar Yadav,Bat,Indian,2 Cr
-Rishabh Pant,Bat,Indian,2 Cr
-Shreyas Iyer,Bat,Indian,2 Cr
-KL Rahul,Bat,Indian,2 Cr
-Ravindra Jadeja,Ball,Indian,2 Cr
-Mohammed Shami,Ball,Indian,2 Cr
-Mohammed Siraj,Ball,Indian,2 Cr
-Shubman Gill,Bat,Indian,2 Cr
-Ishan Kishan,Bat,Indian,2 Cr
-Sanju Samson,Bat,Indian,2 Cr
-R Ashwin,Ball,Indian,2 Cr
-Yuzvendra Chahal,Ball,Indian,2 Cr
-Kuldeep Yadav,Ball,Indian,2 Cr
-Axar Patel,Ball,Indian,2 Cr
-Bhuvneshwar Kumar,Ball,Indian,2 Cr
-Deepak Chahar,Ball,Indian,2 Cr
-Shardul Thakur,Ball,Indian,2 Cr
-Ruturaj Gaikwad,Bat,Indian,2 Cr
-Yashasvi Jaiswal,Bat,Indian,1 Cr
-Rinku Singh,Bat,Indian,1 Cr
-Tilak Varma,Bat,Indian,1 Cr
-Shivam Dube,Bat,Indian,1 Cr
-Washington Sundar,Ball,Indian,1 Cr
-Arshdeep Singh,Ball,Indian,1.5 Cr
-Mukesh Kumar,Ball,Indian,1 Cr
-Avesh Khan,Ball,Indian,1 Cr
-Prasidh Krishna,Ball,Indian,1 Cr
-Umran Malik,Ball,Indian,1 Cr
-Harshal Patel,Ball,Indian,2 Cr
-Mohit Sharma,Ball,Indian,50 Lakh
-Sandeep Sharma,Ball,Indian,50 Lakh
-T Natarajan,Ball,Indian,1 Cr
-Khaleel Ahmed,Ball,Indian,1 Cr
-Ravi Bishnoi,Ball,Indian,1.5 Cr
-Varun Chakaravarthy,Ball,Indian,1 Cr
-Rahul Chahar,Ball,Indian,75 Lakh
-Deepak Hooda,Bat,Indian,75 Lakh
-Krunal Pandya,Ball,Indian,2 Cr
-Vijay Shankar,Bat,Indian,50 Lakh
-Manish Pandey,Bat,Indian,50 Lakh
-Ajinkya Rahane,Bat,Indian,50 Lakh
-Cheteshwar Pujara,Bat,Indian,50 Lakh
-Prithvi Shaw,Bat,Indian,1 Cr
-Sarfaraz Khan,Bat,Indian,50 Lakh
-Devdutt Padikkal,Bat,Indian,1 Cr
-Rahul Tripathi,Bat,Indian,75 Lakh
-Nitish Rana,Bat,Indian,1 Cr
-Venkatesh Iyer,Bat,Indian,1 Cr
-Shahrukh Khan,Bat,Indian,50 Lakh
-Abdul Samad,Bat,Indian,50 Lakh
-Jitesh Sharma,Bat,Indian,1 Cr
-Prabhsimran Singh,Bat,Indian,50 Lakh
-Abhishek Sharma,Bat,Indian,1 Cr
-Sai Sudharsan,Bat,Indian,50 Lakh
-Nehal Wadhera,Bat,Indian,50 Lakh
-Dhruv Jurel,Bat,Indian,50 Lakh
-Akash Deep,Ball,Indian,50 Lakh
-Navdeep Saini,Ball,Indian,50 Lakh
-Chetan Sakariya,Ball,Indian,50 Lakh
-Kartik Tyagi,Ball,Indian,50 Lakh
-Tushar Deshpande,Ball,Indian,50 Lakh
-Jos Buttler,Bat,Overseas,2 Cr
-Phil Salt,Bat,Overseas,2 Cr
-Jonny Bairstow,Bat,Overseas,2 Cr
-Liam Livingstone,Bat,Overseas,2 Cr
-Sam Curran,Ball,Overseas,2 Cr
-Moeen Ali,Ball,Overseas,2 Cr
-Jofra Archer,Ball,Overseas,2 Cr
-Mark Wood,Ball,Overseas,2 Cr
-Reece Topley,Ball,Overseas,1.5 Cr
-Will Jacks,Bat,Overseas,1 Cr
-Glenn Maxwell,Bat,Overseas,2 Cr
-Pat Cummins,Ball,Overseas,2 Cr
-Mitchell Starc,Ball,Overseas,2 Cr
-Josh Hazlewood,Ball,Overseas,2 Cr
-Travis Head,Bat,Overseas,2 Cr
-Steve Smith,Bat,Overseas,2 Cr
-David Warner,Bat,Overseas,2 Cr
-Mitchell Marsh,Bat,Overseas,2 Cr
-Cameron Green,Bat,Overseas,2 Cr
-Tim David,Bat,Overseas,1.5 Cr
-Marcus Stoinis,Bat,Overseas,2 Cr
-Quinton de Kock,Bat,Overseas,2 Cr
-Heinrich Klaasen,Bat,Overseas,2 Cr
-David Miller,Bat,Overseas,2 Cr
-Aiden Markram,Bat,Overseas,2 Cr
-Kagiso Rabada,Ball,Overseas,2 Cr
-Anrich Nortje,Ball,Overseas,2 Cr
-Marco Jansen,Ball,Overseas,1 Cr
-Kane Williamson,Bat,Overseas,2 Cr
-Trent Boult,Ball,Overseas,2 Cr
-Rashid Khan,Ball,Overseas,2 Cr
-Rahmanullah Gurbaz,Bat,Overseas,1 Cr
-Sunil Narine,Ball,Overseas,2 Cr
-Andre Russell,Bat,Overseas,2 Cr
-Nicholas Pooran,Bat,Overseas,2 Cr
-Riyan Parag,Bat,Indian,50 Lakh
-Harshit Rana,Ball,Indian,50 Lakh
-Yash Dayal,Ball,Indian,50 Lakh
-Mayank Yadav,Ball,Indian,50 Lakh
-Suyash Sharma,Ball,Indian,50 Lakh
-Vaibhav Arora,Ball,Indian,50 Lakh
-Mayank Agarwal,Bat,Indian,1 Cr
-Kedar Jadhav,Bat,Indian,1 Cr
-Ambati Rayudu,Bat,Indian,1.5 Cr
-Robin Uthappa,Bat,Indian,1.5 Cr
-KS Bharat,Bat,Indian,50 Lakh
-N Jagadeesan,Bat,Indian,50 Lakh
-Sheldon Jackson,Bat,Indian,50 Lakh
-Anuj Rawat,Bat,Indian,50 Lakh
-Mahipal Lomror,Bat,Indian,50 Lakh
-Shahbaz Ahmed,Ball,Indian,50 Lakh
-Karn Sharma,Ball,Indian,50 Lakh
-Piyush Chawla,Ball,Indian,50 Lakh
-Amit Mishra,Ball,Indian,50 Lakh
-Ishant Sharma,Ball,Indian,50 Lakh
-Umesh Yadav,Ball,Indian,1 Cr
-Shivam Mavi,Ball,Indian,50 Lakh
-Kamlesh Nagarkoti,Ball,Indian,50 Lakh
-Jaydev Unadkat,Ball,Indian,50 Lakh
-Sandeep Warrier,Ball,Indian,50 Lakh
-Basil Thampi,Ball,Indian,50 Lakh
-Siddarth Kaul,Ball,Indian,50 Lakh
-R Sai Kishore,Ball,Indian,50 Lakh
-Murugan Ashwin,Ball,Indian,50 Lakh
-Shreyas Gopal,Ball,Indian,50 Lakh
-K Gowtham,Ball,Indian,50 Lakh
-Manoj Bhandage,Bat,Indian,50 Lakh
-Akash Madhwal,Ball,Indian,50 Lakh
-Arjun Tendulkar,Ball,Indian,50 Lakh
-Hrithik Shokeen,Ball,Indian,50 Lakh
-Kumar Kartikeya,Ball,Indian,50 Lakh
-Vishnu Vinod,Bat,Indian,50 Lakh
-Shams Mulani,Ball,Indian,50 Lakh
-Arshad Khan,Ball,Indian,50 Lakh
-Naman Dhir,Bat,Indian,50 Lakh
-Anshul Kamboj,Ball,Indian,50 Lakh
-Harpreet Brar,Ball,Indian,50 Lakh
-Vidwath Kaverappa,Ball,Indian,50 Lakh
-Rishi Dhawan,Ball,Indian,50 Lakh
-Atharva Taide,Bat,Indian,50 Lakh
-Harpreet Singh Bhatia,Bat,Indian,50 Lakh
-Shivam Sharma,Ball,Indian,50 Lakh
-Shashank Singh,Bat,Indian,50 Lakh
-Ashutosh Sharma,Bat,Indian,50 Lakh
-Darshan Nalkande,Ball,Indian,50 Lakh
-Abhinav Manohar,Bat,Indian,50 Lakh
-Rahul Tewatia,Bat,Indian,1 Cr
-Sushant Mishra,Ball,Indian,50 Lakh
-Yash Thakur,Ball,Indian,50 Lakh
-Mohsin Khan,Ball,Indian,50 Lakh
-Prerak Mankad,Bat,Indian,50 Lakh
-Yudhvir Singh,Ball,Indian,50 Lakh
-Ayush Badoni,Bat,Indian,50 Lakh
-Mayank Dagar,Ball,Indian,50 Lakh
-Sanvir Singh,Bat,Indian,50 Lakh
-Nitish Kumar Reddy,Bat,Indian,50 Lakh
-Upendra Yadav,Bat,Indian,50 Lakh
-Anmolpreet Singh,Bat,Indian,50 Lakh
-Ricky Bhui,Bat,Indian,50 Lakh
-Karan Sharma,Bat,Indian,50 Lakh
-Devon Conway,Bat,Overseas,1 Cr
-Rachin Ravindra,Bat,Overseas,1 Cr
-Daryl Mitchell,Bat,Overseas,1.5 Cr
-Mitchell Santner,Ball,Overseas,1 Cr
-Tim Southee,Ball,Overseas,1.5 Cr
-Lockie Ferguson,Ball,Overseas,1.5 Cr
-Glenn Phillips,Bat,Overseas,1 Cr
-Matheesha Pathirana,Ball,Overseas,50 Lakh
-Maheesh Theekshana,Ball,Overseas,50 Lakh
-Wanindu Hasaranga,Ball,Overseas,1.5 Cr
-Kusal Mendis,Bat,Overseas,50 Lakh
-Dushmantha Chameera,Ball,Overseas,50 Lakh
-Nandre Burger,Ball,Overseas,50 Lakh
-Gerald Coetzee,Ball,Overseas,1 Cr
-Lungi Ngidi,Ball,Overseas,1 Cr
-Tristan Stubbs,Bat,Overseas,50 Lakh
-Dewald Brevis,Bat,Overseas,50 Lakh
-Donovan Ferreira,Bat,Overseas,50 Lakh
-Matthew Wade,Bat,Overseas,1 Cr
-Matthew Short,Bat,Overseas,50 Lakh
-Spencer Johnson,Ball,Overseas,50 Lakh
-Jason Behrendorff,Ball,Overseas,1 Cr
-Jhye Richardson,Ball,Overseas,1.5 Cr
-Riley Meredith,Ball,Overseas,1 Cr
-Romario Shepherd,Ball,Overseas,50 Lakh
-Rovman Powell,Bat,Overseas,1 Cr
-Jason Holder,Ball,Overseas,1.5 Cr
-Akeal Hosein,Ball,Overseas,50 Lakh
-Alzarri Joseph,Ball,Overseas,1 Cr
-Kyle Mayers,Bat,Overseas,50 Lakh
-Noor Ahmad,Ball,Overseas,50 Lakh
-Naveen-ul-Haq,Ball,Overseas,50 Lakh
-Fazalhaq Farooqi,Ball,Overseas,50 Lakh
-Azmatullah Omarzai,Ball,Overseas,50 Lakh
-Harry Brook,Bat,Overseas,1.5 Cr
-Rajat Patidar,Bat,Indian,50 Lakh
-Sameer Rizvi,Bat,Indian,50 Lakh
-Swastik Chikara,Bat,Indian,50 Lakh
-Ramandeep Singh,Bat,Indian,50 Lakh
-Angkrish Raghuvanshi,Bat,Indian,50 Lakh
-Kumar Kushagra,Bat,Indian,50 Lakh
-Robin Minz,Bat,Indian,50 Lakh
-Yash Dhull,Bat,Indian,50 Lakh
-Priyansh Arya,Bat,Indian,50 Lakh
-Manav Suthar,Ball,Indian,50 Lakh
-Tanush Kotian,Ball,Indian,50 Lakh
-Abid Mushtaq,Ball,Indian,50 Lakh
-Shivalik Sharma,Bat,Indian,50 Lakh
-Swapnil Singh,Ball,Indian,50 Lakh
-Saurabh Kumar,Ball,Indian,50 Lakh
-Nishant Sindhu,Ball,Indian,50 Lakh
-Baba Indrajith,Bat,Indian,50 Lakh
-Ripal Patel,Bat,Indian,50 Lakh
-Lalit Yadav,Bat,Indian,50 Lakh
-Aman Khan,Bat,Indian,50 Lakh
-Rajvardhan Hangargekar,Ball,Indian,50 Lakh
-Simarjeet Singh,Ball,Indian,50 Lakh
-Prashant Solanki,Ball,Indian,50 Lakh
-Mukesh Choudhary,Ball,Indian,50 Lakh
-KM Asif,Ball,Indian,50 Lakh
-Vivrant Sharma,Bat,Indian,50 Lakh
-Shahbaz Nadeem,Ball,Indian,50 Lakh
-Ankit Rajpoot,Ball,Indian,50 Lakh
-Mandeep Singh,Bat,Indian,50 Lakh
-Gurkeerat Singh Mann,Bat,Indian,50 Lakh
-Karun Nair,Bat,Indian,50 Lakh
-Saurabh Tiwary,Bat,Indian,50 Lakh
-Manan Vohra,Bat,Indian,50 Lakh
-Sachin Baby,Bat,Indian,50 Lakh
-Rohan Kadam,Bat,Indian,50 Lakh
-Jalaj Saxena,Ball,Indian,50 Lakh
-KC Cariappa,Ball,Indian,50 Lakh
-Pravin Dubey,Ball,Indian,50 Lakh
-Sudhesan Midhun,Ball,Indian,50 Lakh
-Mujtaba Yousuf,Ball,Indian,50 Lakh
-Aryan Juyal,Bat,Indian,50 Lakh
-Luvnith Sisodia,Bat,Indian,50 Lakh
-C Hari Nishaanth,Bat,Indian,50 Lakh
-Kuldeep Sen,Ball,Indian,50 Lakh
-Kuldip Yadav,Ball,Indian,50 Lakh
-Rasikh Dar,Ball,Indian,50 Lakh
-Abdul Basith,Bat,Indian,50 Lakh
-Akash Vashisht,Bat,Indian,50 Lakh
-Urvil Patel,Bat,Indian,50 Lakh
-Shubham Dubey,Bat,Indian,50 Lakh
-Arshin Kulkarni,Bat,Indian,50 Lakh
-Sakib Hussain,Ball,Indian,50 Lakh
-Sumit Kumar,Ball,Indian,50 Lakh
-Jhathavedh Subramanyan,Ball,Indian,50 Lakh
-Prince Choudhary,Ball,Indian,50 Lakh
-Amit Ali,Bat,Indian,50 Lakh
-Bipin Saurabh,Bat,Indian,50 Lakh
-Avanish Rao Aravelly,Bat,Indian,50 Lakh
-Saurav Chauhan,Bat,Indian,50 Lakh
-Gurnoor Brar,Ball,Indian,50 Lakh
-Baltej Singh,Ball,Indian,50 Lakh
-Raj Bawa,Ball,Indian,50 Lakh
-Pratham Singh,Bat,Indian,50 Lakh
-Gourav Yadav,Ball,Indian,50 Lakh
-Atit Sheth,Ball,Indian,50 Lakh
-Bhargav Bhatt,Ball,Indian,50 Lakh
-Lukman Meriwala,Ball,Indian,50 Lakh
-Ashwin Hebbar,Bat,Indian,50 Lakh
-Virat Singh,Bat,Indian,50 Lakh
-Shashank Singh,Bat,Indian,50 Lakh
-Faf du Plessis,Bat,Overseas,2 Cr
-Shimron Hetmyer,Bat,Overseas,1.5 Cr
-Shai Hope,Bat,Overseas,1.5 Cr
-Sherfane Rutherford,Bat,Overseas,1.5 Cr
-Gudakesh Motie,Ball,Overseas,50 Lakh
-Obed McCoy,Ball,Overseas,75 Lakh
-Alick Athanaze,Bat,Overseas,50 Lakh
-Mujeeb Ur Rahman,Ball,Overseas,1.5 Cr
-Mohammad Nabi,Bat,Overseas,1.5 Cr
-Allah Ghazanfar,Ball,Overseas,50 Lakh
-Waqar Salamkheil,Ball,Overseas,50 Lakh
-Qais Ahmad,Ball,Overseas,50 Lakh
-Ibrahim Zadran,Bat,Overseas,75 Lakh
-Gulbadin Naib,Bat,Overseas,50 Lakh
-Dilshan Madushanka,Ball,Overseas,50 Lakh
-Nuwan Thushara,Ball,Overseas,50 Lakh
-Bhanuka Rajapaksa,Bat,Overseas,50 Lakh
-Dasun Shanaka,Bat,Overseas,50 Lakh
-Chamika Karunaratne,Ball,Overseas,50 Lakh
-Mustafizur Rahman,Ball,Overseas,2 Cr
-Taskin Ahmed,Ball,Overseas,75 Lakh
-Shakib Al Hasan,Bat,Overseas,1.5 Cr
-Shoriful Islam,Ball,Overseas,50 Lakh
-Tom Curran,Ball,Overseas,1.5 Cr
-Chris Woakes,Ball,Overseas,2 Cr
-Richard Gleeson,Ball,Overseas,50 Lakh
-Luke Wood,Ball,Overseas,50 Lakh
-Nathan Ellis,Ball,Overseas,50 Lakh
-Lance Morris,Ball,Overseas,50 Lakh
-Kwena Maphaka,Ball,Overseas,50 Lakh
-
-`;
-// 👆 ડેટા અહી પૂરો થશે 👆
-
-auctionPlayers = [];
-let rows = rawCSVData.trim().split("\n");
-
-rows.forEach((row, index) => {
-// ખાલી લાઈન હોય કે ટાઈટલ હોય તો સ્કીપ કરો
-if(row.trim() === "" || row.includes("Name,Category")) return;
-
-// કોમા (,) થી અલગ કરો અને વધારાની ખાલી જગ્યા કાઢી નાખો
-let cols = row.split(",").map(c => c.trim()).filter(c => c !== "");
-
-if (cols.length < 4) return; // જો ડેટા અધૂરો હોય તો સ્કીપ કરો
-
-let name = cols[0];
-let role = cols[1] === "Bat" ? "Batter" : "Bowler";
-let isOverseas = cols[2].toLowerCase() === "overseas";
-let priceString = cols[3].toLowerCase();
-
-// પ્રાઈસ સેટ કરો
-let basePrice = 5000000; // Default 50 Lakh
-if (priceString.includes("2 cr")) basePrice = 20000000;
-else if (priceString.includes("1.5 cr")) basePrice = 15000000;
-else if (priceString.includes("1 cr")) basePrice = 10000000;
-else if (priceString.includes("75 lakh")) basePrice = 7500000;
-else if (priceString.includes("50 lakh")) basePrice = 5000000;
-
-// નામ પરથી મસ્ત ફોટો (Avatar) બનાવો
-let nameParts = name.split(' ');
-let initials = nameParts.length > 1 ? nameParts[0][0] + nameParts[1][0] : nameParts[0][0];
-let avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff&rounded=true&bold=true`;
-
-auctionPlayers.push({
-id: index + 5000, // આઈડી મિક્સ ના થાય એટલે 5000 થી ચાલુ
-name: name,
-role: role,
-isOverseas: isOverseas,
-base: basePrice,
-avatar: avatarUrl
-});
-});
-
-// ઓક્શન માટે પ્લેયર્સને શફલ (મિક્સ) કરી દો જેથી દર વખતે નવો પ્લેયર પહેલા આવે
-auctionPlayers.sort(() => 0.5 - Math.random());
-}
 
 function categorizeAuctionPlayers() {
 auctionSets = [
@@ -12445,6 +12315,7 @@ document.getElementById('hpl-current-bowler').innerText = `${b.name} [${b.wicket
 function prepareHplNextBall() {
     let m = hplMatchVars;
     if (m.balls === 30 && ((m.isUserBatting && !m.timeoutDoneUser) || (!m.isUserBatting && !m.timeoutDoneAI))) {
+        triggerInterstitialAd(); // 🌟 5. HPL: 5મી ઓવરે Ad
         triggerHplTimeout();
         return;
     }
@@ -12479,6 +12350,7 @@ function prepareHplNextBall() {
     document.getElementById('hpl-action-prompt').innerText = m.isUserBatting ? "PLAY YOUR SHOT (BAT)" : "PITCH THE BALL (BOWL)";
     document.getElementById('hpl-action-prompt').style.color = m.isUserBatting ? "#ea580c" : "#0ea5e9";
 }
+
 function closeHplScorecardModal() {
     document.getElementById('scorecard-modal').style.display = 'none';
     if (overBreakActive) {
@@ -12761,6 +12633,10 @@ function continueHplPostBall() {
 function checkHplInningsStatus() {
     let m = hplMatchVars;
     if (m.wickets >= 10 || m.balls >= 60 || (m.target !== -1 && m.runs >= m.target)) {
+
+        stopBallTimer();
+        isAnimating = true;
+
         if (m.currentInnings === 1) {
             m.scoreInnings1 = m.runs;
             m.wicketsInnings1 = m.wickets;
@@ -12770,8 +12646,10 @@ function checkHplInningsStatus() {
             m.runs = 0; m.wickets = 0; m.balls = 0; m.striker = 0; m.nonStriker = 1; m.currentBowlerIdx = -1;
 
             inningsBreakActive = true;
-            showHplScorecardModal("End of Innings 1"); // 1લી ઇનિંગ પતે ત્યારે પણ સ્કોરકાર્ડ આવશે
+            // 🌟 સીધું જ સ્કોરકાર્ડ દેખાશે
+            showHplScorecardModal("End of Innings 1");
         } else {
+            // 🌟 ટાર્ગેટ પૂરો થાય કે તરત HPL મેચ પૂરી
             endHplMatch();
         }
     } else {
@@ -12780,37 +12658,39 @@ function checkHplInningsStatus() {
 }
 
 function endHplMatch() {
-isMatchOngoing = false;
-let match = hplSchedule[currentHplMatchIndex];
-let m = hplMatchVars;
+    isMatchOngoing = false;
+    let match = hplSchedule[currentHplMatchIndex];
+    let m = hplMatchVars;
 
-let p1BatScore = m.userBatFirst ? m.scoreInnings1 : m.runs;
-let p1BatWickets = m.userBatFirst ? m.wicketsInnings1 : m.wickets;
-let p2BatScore = m.userBatFirst ? m.runs : m.scoreInnings1;
-let p2BatWickets = m.userBatFirst ? m.wickets : m.wicketsInnings1;
+    let p1BatScore = m.userBatFirst ? m.scoreInnings1 : m.runs;
+    let p1BatWickets = m.userBatFirst ? m.wicketsInnings1 : m.wickets;
+    let p2BatScore = m.userBatFirst ? m.runs : m.scoreInnings1;
+    let p2BatWickets = m.userBatFirst ? m.wickets : m.wicketsInnings1;
 
-let p1Won = p1BatScore > p2BatScore;
-let isTie = p1BatScore === p2BatScore;
+    let p1Won = p1BatScore > p2BatScore;
+    let isTie = p1BatScore === p2BatScore;
 
-updateHplStats(match.t1, p1BatScore, 60, p2BatScore, 60, p1Won, isTie);
-updateHplStats(match.t2, p2BatScore, 60, p1BatScore, 60, !p1Won, isTie);
+    updateHplStats(match.t1, p1BatScore, 60, p2BatScore, 60, p1Won, isTie);
+    updateHplStats(match.t2, p2BatScore, 60, p1BatScore, 60, !p1Won, isTie);
 
-let winnerName = p1Won ? match.t1.name : (isTie ? "Tie" : match.t2.name);
-hplHistory[currentHplMatchIndex].winner = winnerName;
-currentHplMatchIndex++;
+    let winnerName = p1Won ? match.t1.name : (isTie ? "Tie" : match.t2.name);
+    hplHistory[currentHplMatchIndex].winner = winnerName;
+    currentHplMatchIndex++;
 
-hplMatchVars = null;
-saveGameData();
-renderHplDashboard();
+    hplMatchVars = null;
+    saveGameData();
+    renderHplDashboard();
 
-playSFX(audioWin);
+    playSFX(audioWin);
 
-// આનાથી મેચ પૂરી થતાં ડાયરેક્ટ Scorecard & Player of the match બતાવશે
-showFinalSummary(p1BatScore, p1BatWickets, p2BatScore, p2BatWickets);
+    triggerInterstitialAd(); // 🌟 7. HPL Match પૂરી થાય ત્યારે Ad
 
-if (currentHplMatchIndex >= hplSchedule.length) {
-setTimeout(() => { alert("League Stage Over! Proceeding to Playoffs."); }, 2000);
-}
+    // આનાથી મેચ પૂરી થતાં ડાયરેક્ટ Scorecard & Player of the match બતાવશે
+    showFinalSummary(p1BatScore, p1BatWickets, p2BatScore, p2BatWickets);
+
+    if (currentHplMatchIndex >= hplSchedule.length) {
+        setTimeout(() => { alert("League Stage Over! Proceeding to Playoffs."); }, 2000);
+    }
 }
 
 // ==========================================
@@ -13054,6 +12934,332 @@ function handleAndroidBackButton() {
                 Android.exitApp(); // આ જાવા કોડની exitApp ને બોલાવશે અને ગેમ બંધ કરશે
             }
         }
+    }
+}
+
+    function triggerInterstitialAd() {
+    if (typeof Android !== "undefined" && typeof Android.showInterstitialAd === "function") {
+        Android.showInterstitialAd(); // સીધી Android ની Ad બોલાવશે
+    } else {
+        console.log("Interstitial Ad Triggered (Browser Simulation)");
+    }
+}
+
+// ==========================================
+// === FIREBASE SETUP & DATABASE LOGIC ======
+// ==========================================
+
+// 1. Firebase Configuration (તમારો અસલી કોડ)
+const firebaseConfig = {
+    apiKey: "AIzaSyDnx8TjSLsE4icpu8nNHc2b4kwHJPU_acg",
+    authDomain: "hands-cricket-dd5ba.firebaseapp.com",
+    projectId: "hands-cricket-dd5ba",
+    storageBucket: "hands-cricket-dd5ba.firebasestorage.app",
+    messagingSenderId: "959567353107",
+    appId: "1:959567353107:android:5282e6176b01b61f1636e6"
+  };
+
+  // Firebase સ્ટાર્ટ 
+  firebase.initializeApp(firebaseConfig);
+  const firestoreDb = firebase.firestore();
+
+  const analytics = firebase.analytics();
+
+// 3. નવું ડેટાબેઝ લાવવાનું ફંક્શન
+async function generateHPLDatabase() {
+    auctionPlayers = [];
+    
+    try {
+        console.log("ફાયરબેઝમાંથી પ્લેયર્સનો ડેટા લાવી રહ્યો છું...");
+        
+        // "HPL_Players" નામના કલેક્શનમાંથી ડેટા લાવશે
+        const snapshot = await firestoreDb.collection("HPL_Players").get();
+        
+        if (snapshot.empty) {
+            console.log("ફાયરબેઝમાં કોઈ પ્લેયર નથી! કૃપા કરીને ડેટા એડ કરો.");
+            // અત્યારે ખાલી ડેટાબેઝ હોય તો ગેમ ક્રેશ ના થાય એટલે 1 ડમી પ્લેયર નાખી દઈએ
+            auctionPlayers.push({
+                id: "dummy1", name: "No Players Found", role: "Batter", isOverseas: false, base: 5000000, 
+                avatar: "https://ui-avatars.com/api/?name=NP&background=random&color=fff"
+            });
+        } else {
+            snapshot.forEach((doc) => {
+                let data = doc.data();
+                
+                let nameParts = data.name.split(' ');
+                let initials = nameParts.length > 1 ? nameParts[0][0] + nameParts[1][0] : nameParts[0][0];
+                let avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random&color=fff&rounded=true&bold=true`;
+
+                auctionPlayers.push({
+                    id: doc.id,
+                    name: data.name,
+                    role: data.role, 
+                    isOverseas: data.isOverseas, 
+                    base: data.basePrice, 
+                    avatar: avatarUrl
+                });
+            });
+        }
+
+        // પ્લેયર્સને શફલ કરો
+        auctionPlayers.sort(() => 0.5 - Math.random());
+        
+        // કેટેગરીમાં ડિવાઈડ કરો
+        if (typeof categorizeAuctionPlayers === "function") {
+            categorizeAuctionPlayers();
+        }
+        
+        console.log("ફાયરબેઝ ડેટા સફળતાપૂર્વક લોડ થઈ ગયો! કુલ પ્લેયર્સ: ", auctionPlayers.length);
+
+    } catch (error) {
+        console.error("ફાયરબેઝમાંથી ડેટા લાવવામાં એરર:", error);
+        alert("ડેટાબેઝ કનેક્શનમાં એરર છે. કન્સોલ ચેક કરો.");
+    }
+}
+
+// ==========================================
+// 🎓 VISUAL DRAFT TUTORIAL (3 LANGUAGES)
+// ==========================================
+function showDraftTutorial() {
+    let overlay = document.createElement('div');
+    overlay.id = 'draft-tut-overlay';
+    // આખું બેકગ્રાઉન્ડ ડાર્ક કરશે જેથી પ્લેયરનું ધ્યાન ખાલી પોપ-અપ અને કાર્ડ્સ પર જાય
+    overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:15px; text-align:center; backdrop-filter: blur(4px);";
+    
+    // ત્રણેય ભાષા માટે પરફેક્ટ ડેટા
+    let texts = {
+        en: { 
+            title: "⚠️ SQUAD RULES ⚠️", 
+            desc: "Select exactly 12 Players from the cards below:", 
+            b: "🏏 Min 6 Batters", 
+            bo: "⚾ Min 5 Bowlers", 
+            flex: "🃏 +1 Any Player (Your Choice!)", 
+            btn: "I UNDERSTAND" 
+        },
+        gu: { 
+            title: "⚠️ ટીમ બનાવવાના નિયમો ⚠️", 
+            desc: "નીચેના કાર્ડ્સમાંથી બરાબર 12 ખેલાડી પસંદ કરો:", 
+            b: "🏏 ઓછામાં ઓછા 6 બેટ્સમેન", 
+            bo: "⚾ ઓછામાં ઓછા 5 બોલર", 
+            flex: "🃏 +1 ગમે તે પ્લેયર (તમારી મરજી!)", 
+            btn: "મને સમજાઈ ગયું" 
+        },
+        hi: { 
+            title: "⚠️ टीम बनाने के नियम ⚠️", 
+            desc: "नीचे दिए गए कार्ड्स में से ठीक 12 खिलाड़ी चुनें:", 
+            b: "🏏 कम से कम 6 बैट्समैन", 
+            bo: "⚾ कम से कम 5 बॉलर", 
+            flex: "🃏 +1 कोई भी प्लेयर (आपकी मर्जी!)", 
+            btn: "समझ गया" 
+        }
+    };
+
+    let t = texts[currentLang] || texts['gu'];
+
+    overlay.innerHTML = `
+        <div style="background: linear-gradient(180deg, #1e293b, #0f172a); border: 2px solid #00e5ff; padding: 25px; border-radius: 20px; max-width: 350px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); animation: popUp 0.5s ease-out;">
+            <h2 style="color:#00e5ff; font-family:'Cinzel'; margin-top:0; font-size:22px; text-shadow: 0 0 10px rgba(0,229,255,0.5);">${t.title}</h2>
+            <p style="color:#f8fafc; font-size:14px; font-weight:bold;">${t.desc}</p>
+            
+            <div style="display:flex; flex-direction:column; gap:10px; margin: 20px 0;">
+                <div style="background: rgba(212,175,55,0.15); border: 1px solid #d4af37; padding: 10px; border-radius: 8px; font-size:15px; font-weight:bold; color:#ffd700;">
+                    ${t.b}
+                </div>
+                <div style="background: rgba(56,189,248,0.15); border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size:15px; font-weight:bold; color:#38bdf8;">
+                    ${t.bo}
+                </div>
+                <div style="background: rgba(16,185,129,0.15); border: 1px dashed #10b981; padding: 10px; border-radius: 8px; font-size:14px; font-weight:bold; color:#10b981;">
+                    ${t.flex}
+                </div>
+            </div>
+            
+            <button onclick="closeDraftTutorial()" style="width:100%; background:linear-gradient(135deg, #00e5ff, #0088aa); color:#000; font-size:16px; font-weight:900; border:none; border-radius:30px; padding:12px;">${t.btn}</button>
+        </div>
+        
+        <style>
+            @keyframes bounceArrow {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(15px); }
+            }
+        </style>
+        <div style="margin-top: 20px; font-size: 50px; animation: bounceArrow 1s infinite; filter: drop-shadow(0 0 10px #00e5ff);">
+            ⬇️
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    playSFX(audioBlast); // પોપ-અપ આવે ત્યારે મસ્ત અવાજ
+}
+
+window.closeDraftTutorial = function() {
+    playSFX(audioClick);
+    let overlay = document.getElementById('draft-tut-overlay');
+    if(overlay) overlay.remove();
+    
+    hasDoneDraftTutorial = true;
+    localStorage.setItem('cricpro_draft_tut', 'true');
+};
+
+// ===========================================================================
+// === GOOGLE LOGIN & FIREBASE AUTHENTICATION ===
+// ===========================================================================
+
+// ગૂગલ ઓથ પ્રોવાઈડર સેટઅપ
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// 🌟 NEW: ઓટો-લોગીન (Auto-Login) સિસ્ટમ 🌟
+firebase.auth().onAuthStateChanged(async (user) => {
+    if (user) {
+        console.log("Auto-login successful for:", user.email);
+        userName = user.displayName || "Manager_" + Math.floor(Math.random()*1000);
+        
+        // લોગીન બટન સંતાડીને લોડિંગ બતાવો
+        let btn = document.getElementById('google-signin-btn');
+        let loader = document.getElementById('login-loading-indicator');
+        if(btn) btn.style.display = 'none';
+        if(loader) {
+            loader.style.display = 'block';
+            loader.innerText = "Loading Profile... ⏳";
+        }
+
+        // સીધો ક્લાઉડ ડેટા લાવીને ગેમમાં એન્ટ્રી આપો
+        await handleUserLogin(user);
+    }
+});
+
+// જ્યારે યુઝર Google બટન પર ક્લિક કરે ત્યારે
+function signInWithGoogle() {
+    playSFX(audioClick); // જો સાઉન્ડ ફંક્શન હોય તો
+    let btn = document.getElementById('google-signin-btn');
+    let loader = document.getElementById('login-loading-indicator');
+    
+    if(btn) btn.style.display = 'none';
+    if(loader) loader.style.display = 'block';
+
+    // પોપ-અપ દ્વારા લોગીન કરાવો
+    firebase.auth().signInWithPopup(provider)
+    .then(async (result) => {
+        // સફળ લોગીન!
+        var user = result.user;
+        console.log("Logged in User:", user.displayName, user.email);
+        
+        // ગેમ માટે યુઝરનેમ સેટ કરો (ગૂગલના નામ પરથી)
+        userName = user.displayName || "Manager_" + Math.floor(Math.random()*1000);
+        
+        // ફાયરબેઝ ડેટાબેઝમાંથી ડેટા ચેક કરો
+        await handleUserLogin(user);
+
+    }).catch((error) => {
+        // એરર હેન્ડલિંગ
+        console.error("Google Login Error:", error.code, error.message);
+        alert("લોગીન નિષ્ફળ ગયું: " + error.message);
+        
+        if(btn) btn.style.display = 'flex';
+        if(loader) loader.style.display = 'none';
+    });
+}
+
+// લોગીન થયા પછી ફાયરબેઝ ક્લાઉડમાંથી ડેટા લાવો અથવા નવું એકાઉન્ટ બનાવો
+async function handleUserLogin(user) {
+    try {
+        const docRef = firestoreDb.collection("users").doc(user.uid);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            // જૂનો યુઝર - ડેટા રિસ્ટોર કરો
+            console.log("Welcome back, returning user!");
+            let cloudData = docSnap.data().gameData;
+            
+            if (cloudData) {
+                // લોકલ સ્ટોરેજમાં સેવ કરો જેથી બાકીની ગેમ જૂની સિસ્ટમ પ્રમાણે જ ચાલે
+                localStorage.setItem("cricket_save_" + userName, JSON.stringify(cloudData));
+            }
+            
+            alert(`Welcome back, ${userName}! 🏆`);
+            loadGameData(); // તમારું અસ્તિત્વમાં રહેલું ફંક્શન
+
+        } else {
+            // નવો યુઝર - નવો ડેટા બનાવો
+            console.log("New user created!");
+            
+            userLevel = 1;
+            userPoints = 0;
+            userCoins = 5000;      // વેલકમ બોનસ
+            userDiamonds = 10;     // વેલકમ બોનસ
+            
+            alert(`Welcome, ${userName}! Your legend begins. 🏏`);
+            
+            // ડેટાબેઝમાં પહેલીવાર સેવ કરો
+            saveGameData(); 
+        }
+
+        // ગ્લોબલ લીડરબોર્ડ અપડેટ/ફેચ કરો
+        await fetchAndSyncLeaderboard();
+
+        // UI અપડેટ કરો
+        document.getElementById('disp-mgr-name').innerText = userName;
+        document.getElementById('disp-mgr-lvl').innerText = userLevel;
+        document.getElementById('currency-bar').style.display = 'flex';
+        
+        let btnMarket = document.getElementById('btn-market');
+        if (btnMarket) btnMarket.style.display = (squadUser && squadUser.length > 0) ? 'inline-block' : 'none';
+
+        updateCurrencyUI();
+        applyTranslations();
+        updateManagerUI();
+
+        // મેઈન મેનુ પર જાવ
+        screenHistory = [];
+        showScreen('screen-mode');
+        initRealTimeChat(); // જો ચેટ ચાલુ કરવી હોય તો
+
+    } catch (error) {
+        console.error("Error handling user data:", error);
+        alert("ક્લાઉડ ડેટા લાવવામાં ભૂલ. ઓફલાઇન મોડમાં ચાલુ કરી રહ્યા છીએ.");
+        
+        // ઑફલાઇન ફોલબેક
+        let isExisting = loadGameData();
+        if(!isExisting) {
+            userLevel = 1; userPoints = 0; userCoins = 5000; userDiamonds = 10;
+            saveGameData();
+        }
+        
+        document.getElementById('disp-mgr-name').innerText = userName;
+        document.getElementById('currency-bar').style.display = 'flex';
+        updateCurrencyUI();
+        screenHistory = [];
+        showScreen('screen-mode');
+    }
+}
+
+// લીડરબોર્ડ ફેચ અને સિંક કરવાનું અલગ ફંક્શન
+async function fetchAndSyncLeaderboard() {
+    try {
+        let lbRef = firestoreDb.collection("system").doc("leaderboard");
+        let lbSnap = await lbRef.get();
+        
+        if (lbSnap.exists && lbSnap.data().list) {
+            globalLeaderboard = lbSnap.data().list;
+        } else {
+            globalLeaderboard = [];
+        }
+        
+        // જો નવો યુઝર હોય તો લીડરબોર્ડમાં નાખો
+        let userIndex = globalLeaderboard.findIndex(u => u.name && u.name.toLowerCase() === userName.toLowerCase());
+        if (userIndex === -1) {
+            globalLeaderboard.push({
+                name: userName,
+                world: { m:0, w:0, l:0, ties:0, pts:0, runsScored:0, ballsFaced:0, runsConceded:0, ballsBowled:0 },
+                tourney: { m:0, w:0, l:0, ties:0, pts:0, runsScored:0, ballsFaced:0, runsConceded:0, ballsBowled:0 }
+            });
+            // સર્વર પર અપડેટ કરો
+            await lbRef.set({ list: globalLeaderboard }, { merge: true });
+        }
+        
+        localStorage.setItem("cricpro_global_leaderboard", JSON.stringify(globalLeaderboard));
+        
+    } catch(e) {
+        console.log("Could not sync leaderboard initially.", e);
     }
 }
 
